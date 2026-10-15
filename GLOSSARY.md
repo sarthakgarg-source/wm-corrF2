@@ -1,0 +1,205 @@
+# GLOSSARY — everything used in this study, in plain words
+
+Read this with `outputs/report.html`. Each entry says what the thing is, how it is made here, and how to read the number. The report's section numbers and the table prefixes differ (the prefixes follow the modules); each heading below gives both.
+
+## The pieces everything is built from
+
+**The five assets** — `N100` Nifty 100 (large caps), `MC100` Midcap 100, `SC100` Smallcap 100, `Micro250` Microcap 250 (exists from 2022), `GoldMCX` gold futures on MCX. `N50` is loaded only to set the trading calendar.
+
+**Week / weekly bar** — one row per trading week, using the last close of the week. Everything in this study is weekly.
+
+**Return** — the week's move as a fraction: ln(this week's close ÷ last week's). For small moves it's the ordinary percentage. Returns over several weeks are added up, and `exp(sum) − 1` turns the sum back into a percentage.
+
+**Signal / state** — the desk's supertrend reading for an asset in a week: **BUY (+1)** or **SELL (−1)**. The rule: a band 2 × ATR above and below the mid-price; the state turns BUY when the close rises through the upper band and SELL when it falls through the lower one; the bands only tighten in the trend's direction. **ATR** is the average size of the weekly price swing, here a 5-week weighted average (newest week weighted 5/15). "Flip" = the week the state changes.
+
+**Correlation** (`corr`) — a number from −1 to +1: how much two assets move in the same direction week to week. +1 always together, 0 no relation, −1 always opposite. Rough reading for these indices: above 0.90 "the same thing", 0.70–0.90 "move together", near 0 "unrelated".
+
+**Volatility** (`vol`) — how big an asset's weekly moves typically are, scaled to a year: 20% means a normal year sees swings of about ±20%. Computed as the standard deviation of weekly returns × √52.
+
+**Covariance** (`cov`) — correlation with the size of the moves put back in: **cov = corr × vol(a) × vol(b)**. Two assets can be equally correlated in two periods but have four times the covariance in one of them because both are moving twice as much. Portfolio risk runs on covariance, so the split between "more correlated" and "more volatile" matters. Annualised (×52). The numbers look small (0.01–0.07) because they are products of fractions.
+
+**13-week (one-quarter) correlation** — the correlation computed on the last 13 weeks only, recomputed every week. The "current" correlation this study uses throughout. Short enough to move with the market, long enough not to be noise.
+
+**Average correlation among the four indices** (`mean_corr`) — the plain average of the six pairwise 13-week correlations among N100, MC100, SC100, Micro250 (whichever exist that week). One number for "how much is the market moving as one block right now".
+
+## The report's charts
+Every chart in `outputs/report.html` is interactive (Plotly): hover shows the values; **click a legend entry to hide or show that trace, double-click it to show it alone**; drag a box to zoom, double-click the plot to reset; the camera icon saves a PNG. Static copies live in `outputs/charts/` (`python plots.py`).
+
+## Report §2 — correlation between the asset classes (tables `0_*`)
+
+**correlation matrix** (`0_corr_matrix_full`, `0_corr_matrix_52w`, `0_corr_matrix_13w`) — the correlation of weekly returns between every two series: the five assets plus, for reference, `VIXchg` (the weekly change in India VIX) and `Liquid` (cash). `full` = the whole sample; `52w` / `13w` = the last year / last quarter only. A cell is blank when the series has too few weeks in that window (the VIX file ends 2025-09). `0_corr_matrix_coverage` gives each series' first / last week and count. **Reading:** above 0.90 one asset; 0.70–0.90 move together; near 0 unrelated; below 0 opposite. The rolling version per pair is `6_pair_corr13`; the per-pair summary (whole sample, typical, lowest, highest, now) is in `6_pair_stats`.
+
+## Report §3 — correlation and the signal (tables `1_*`)
+
+**state** (`both BUY`, `both SELL`, `disagree`, `all weeks`) — the weeks sorted by what the two signals of a pair said: both BUY, both SELL, one BUY and one SELL (**disagree** — usually the transition, one leg already flipped), or all weeks together. `weeks` = how many weeks fall in that group. The report's §3.1 table shows the three states side by side per pair.
+
+**corr_buy / corr_sell / corr_change** — the pair's correlation in the both-BUY weeks, in the both-SELL weeks, and the difference. Positive change = the pair is more coupled when both signals are off.
+
+**cov_buy / cov_sell / cov_ratio_sell_over_buy** — the pair's covariance in each state and how many times larger it is in SELL. A ratio of 4 means the pair contributes four times the risk to a portfolio in SELL weeks.
+
+**share_of_cov_change_from_corr / _from_vol** — the covariance rise split into the part caused by correlation rising and the part caused by volatility rising (holding the other at its BUY level). They add to 1. If `from_vol` is 0.9, SELL weeks are dangerous because the assets move more, not because they move more together.
+
+**vol_a_buy / vol_a_sell** etc. — each leg's annualised volatility in each state.
+
+**around flip** (`1_corr_around_flip`: `ref`, `event`, `weeks_from_flip`, `mean_corr`, `ref_own_corr`, `n_events`, `ref_trailing_13w_return`) — an *event study*, done for **every asset as the reference** (`ref`): for every week that asset's signal flipped (to SELL, or to BUY), the average correlation among the four indices (`mean_corr`, = G) is read at each week from 8 before to 8 after, then averaged across all that asset's flips. Week 0 is the flip week. `ref_own_corr` = the flipping asset's own 13-week correlation with the other indices at each offset (for gold: with the four). `n_events` = how many flips were averaged. The last column is the asset's own trailing-quarter return at each offset, for context. **Reading:** a line that rises before week 0 means correlation climbs ahead of the signal; a line flat before and rising after means the signal fires first. In the chart, click an asset in the legend to show or hide its line.
+
+**around flip, pair by pair** (`1_corr_around_flip_pairs`: `ref`, `event`, `pair`, `weeks_from_flip`, `mean_corr`, `n_events`) — the same event study with every pair's own 13-week correlation instead of G: for each reference asset's flips, each of the ten pairs at each offset, averaged over that asset's flips. The chart's menu picks the reference. **Reading:** around N100's SELL flips the pairs that climb are the N100 pairs; the pairs among the smaller indices were already coupled — the rise in G is Nifty re-joining the block. Gold pairs dip below zero at the flip (gold rose while the indices fell).
+
+**by breadth** (`1_corr_by_breadth`: `none in SELL` … `all in SELL`, `mean`, `median`, `weeks`; `1_corr_by_breadth_pairs`: one column per pair plus `weeks`) — the 13-week correlation grouped by how many of the four index signals were in SELL that week — G in the first table, every pair in the second. `weeks` = the weeks in the band that have a correlation.
+
+**corr timeseries** (`mean_corr_13w`, `n_sell`, `n_live`, `N100_state`, then one column per pair `a|b`) — the week-by-week series behind the chart: G, the signal counts, and every pair's 13-week correlation.
+
+**Every pair beside the group.** Wherever the report shows the group correlation G, the same study is repeated for each of the ten pairs (gold included) and the pair lines are drawn on the same chart — index pairs solid, gold pairs dashed and off until clicked, each pair in its own colour throughout. The pair tables carry the group table's name plus `_pairs`; a column named `a|b` is that pair's figure, `z_a|b` its z-score against its own 104-week history, and `a_…` / `b_…` a figure for the pair's first / second leg.
+
+## Report §5 — the historical pattern (tables `2_*`)
+
+**by year** — for each calendar year: `mean_corr`, `min_corr`, `max_corr` of the 13-week correlation across the year's weeks; `weeks_corr_above_0.9` = how many weeks the indices were effectively one block; `ret_<asset>` = the asset's return over that year (price only, no dividends). The last year is partial.
+
+**quintile / bucket Q1..Q5** — all weeks sorted by the 13-week correlation and cut into five equal groups: Q1 the least-correlated fifth, Q5 the most. `corr_lo`–`corr_hi` = the correlation range inside the bucket.
+
+**same_quarter_mean / same_quarter_hit** — the asset's return over the *same* 13 weeks the correlation was measured on, averaged within the bucket, and the share of those quarters that were positive. **Reading:** "what was the market doing while correlation sat at this level". Because the two windows overlap, this is descriptive — it tells you what high correlation *looks like*, not what it predicts.
+
+**next_quarter_mean / next_quarter_hit** — the asset's return over the *following* 13 weeks (t+1..t+13), averaged within the bucket. **Reading:** this is the clean, forward-looking one. If Q5's next quarter is better than Q1's, tightly-correlated weeks were followed by better returns.
+
+**by year, pair by pair** (`2_by_year_pairs`: rows = year, one column per pair) — each pair's average 13-week correlation in the calendar year (the lines on the by-year chart).
+
+**quintiles, pair by pair** (`2_corr_quintile_returns_pairs`: `pair`, `leg`, `bucket`, `corr_lo`, `corr_hi`, `weeks`, `same_quarter_mean`, `same_quarter_hit`, `next_quarter_mean`, `next_quarter_hit`, `n_next`) — the quintile study repeated with each pair's *own* correlation doing the sorting and the pair's two legs as the assets: the weeks cut into five equal groups by that pair's 13-week correlation, and each leg's return over the same quarter and the next inside each group. **Reading:** the B10 pattern (the same quarter falls from Q1 to Q5, the next quarter is better after Q5) pair by pair; in a gold pair the bucket is 'how much gold happened to move with that index' and gold's own next quarter shows no pattern.
+
+**timeline** — week by week: the 13-week correlation (G, then one column per pair), N100's and SC100's trailing 13-week return, and the VIX level if the file is present.
+
+**high-correlation episodes** (`start`, `end`, `weeks`, `peak_corr`, `<asset>_during`, `<asset>_next_13w`) — every stretch where the 13-week correlation stayed above 0.90 for at least 8 weeks, with what N100, SC100 and gold returned during the stretch and over the 13 weeks after it ended. **Pair by pair:** `2_high_corr_episodes_pairs` (`pair`, `start`, `end`, `weeks`, `peak_corr`, `a_during`, `a_next_13w`, `b_during`, `b_next_13w`) lists every stretch of 8+ weeks in which *that pair's* correlation stayed above 0.90, with each leg's return; `2_high_corr_pairs_summary` (`weeks_above_0.90`, `share_of_weeks_above_0.90`, `stretches`, `median_weeks`, `a_next_13w_mean`, `a_next_13w_positive`, `b_next_13w_mean`, `b_next_13w_positive`) sums it up per pair. No gold pair ever has one.
+
+## Report Part II §6 — who breaks the CORRELATION first (tables `3_*`)
+
+**c (an index's correlation with the others)** — every week, the index's 13-week correlation with each of the other three size indices, averaged. "How much is this index moving with the rest of the market right now." Columns `c_N100`, `c_MC100`, `c_SC100`, `c_Micro250`; `c_GoldMCX` is gold's average correlation with the four (reference only).
+
+**G (the group's correlation)** — the average of all six pairwise 13-week correlations among the four indices (whichever exist that week; before 2022 that is the three pairs among N100, MC100 and SC100). "How much is the whole market moving as one block." `3_corr_series` also carries every pair on its own (`a|b`) and its z-score (`z_a|b`) — the chart's third panel.
+
+**z-score** (`z_G`, `z_c_<asset>`) — how unusual this week's value is *for that series*: (value − its average over the last 104 weeks) ÷ its standard deviation over those weeks. 0 = its usual self; −1 = a full standard deviation less correlated than usual; −3 = very rare. Each index is judged against its own history, because N100 normally sits lower than SC100.
+
+**break** — the first week a series' z-score reaches −1 or below, having been above −0.5 before. For `G` it marks the market decorrelating; for `c_<asset>` it marks that index letting go of the others.
+
+**decorrelation episode** (`3_corr_episodes`: `episode`, `start`, `end`, `weeks`, `G_before`, `G_min`, `G_min_date`, `drop`, `z_min`) — one group break: from the week `z_G` crosses −1 until it is back above −0.5. `G_before` = the group's correlation over the 8 weeks before; `G_min` = its lowest point; `drop` = the difference. Labelled C1, C2 … by start month.
+
+**break_date / lead_vs_group_weeks** (`3_asset_breaks`) — the index's own break date and its distance in weeks from the group's break. **Negative = it broke before the market did.** Blank = it never crossed the line in the window (from 8 weeks before the group break to the episode's end).
+
+**rank** — within an episode, the indices ordered by break date; 1 = earliest. Ties share the rank (and are common: the group's number is the average of the indices, so several cross together).
+
+**z_at_group_break / rank_deepest** — each index's z-score in the week the group broke, and the ranking by it (1 = furthest below its own norm). The first tie-breaker: "who was already most detached when the market let go".
+
+**corr_before / corr_min / corr_drop / drop_share / rank_drop** — the index's correlation with the others over the 8 weeks before, its lowest point in the episode, the fall, the fall as a share of all four indices' falls added up, and the ranking by it (1 = biggest fall). The second tie-breaker: "whose relationship with the rest actually collapsed".
+
+**rel_13w_return_at_break / direction** — at its break week, the index's 13-week return minus the other indices' average 13-week return. Positive → **up-break** (it decoupled by outperforming); negative → **down-break** (by underperforming). Says *which way* it left the group.
+
+**summary** (`3_summary`) — per index: `episodes_present` / `episodes_broke` / `share_broke`; `share_first` (earliest by date, ties counted) and `share_first_alone` (earliest with no tie); `avg_rank`; `median_lead_weeks`; `share_before_group` (broke strictly before the market); `share_deepest` / `avg_rank_deepest`; `share_biggest_drop` / `avg_rank_drop` / `avg_drop_share` / `avg_corr_drop` (the average fall in its own correlation, in correlation points); `combined_rank` = the average of the three average ranks (lower = more of a first-breaker); `share_up_breaks` and `median_rel_13w_return_at_break` (direction); `verdict`.
+
+**pair breaks** (`3_pair_breaks`, `3_pair_summary`) — the same break rule applied to each of the six pairwise correlations instead of each index's average: which *relationship* goes first.
+
+**before_selloff** (`3_before_selloff`: `selloff`, `N100_peak`, `depth`, `group_min_z_before_peak`, `group_broke_before_peak`, `N100_broke_weeks_before_peak`, `MC100_broke_weeks_before_peak`, `SC100_broke_weeks_before_peak`, `Micro250_broke_weeks_before_peak`, `first_to_break`) — for each price sell-off of §7 (`N100_peak` = the week N100 topped, `depth` = how far it then fell), whether the group's z crossed −1 in the 13 weeks before that peak, how low it got, and for each index how many weeks before the peak its own z crossed; `first_to_break` names the earliest. The early-warning test.
+
+**after_break** (`3_after_break`, `3_after_break_summary`) — after each index's break: its own return (`breaker`), the other indices' average (`rest_of_group`), gold, and `breaker_minus_rest`, over the next 4 and 13 weeks (`weeks_ahead`); `share_breaker_ahead` = how often the breaker was still ahead. Split by up-break / down-break.
+
+**sensitivity** (`3_sensitivity`, `3_sensitivity_long`: `window_weeks`, `z_threshold`, `episodes`, `share_first`, `avg_rank`, `share_broke`) — the by-date ranking re-run at a 13- and 26-week correlation window and a break line of −1 and −1.5. If the winner changes with the settings, the by-date answer is fragile; if the direction finding holds, it is not.
+
+## Report Part II §7 — who breaks in price and signal (tables `4_*`)
+
+**sell-off** (`4_price_episodes`) — any fall of 10% or more in N100 from its running high, on weekly closes. `peak_date` = the last week N100 sat at that high; `trough_date` = its lowest close before it regained the high; `end_date` = the week it regained the high (or the last week of data if it hasn't); `depth` = the fall; `weeks_peak_to_trough`, `weeks_to_recover`. Episodes closer than 8 weeks apart are merged. Labelled `E1 2016-01` etc. by their peak month.
+
+**peak** (per asset) — the asset's own highest weekly close from 8 weeks before N100's peak up to the trough. Each asset may have peaked on a different week from N100.
+
+**signal_sell** — the first week after the asset's own peak that its supertrend flipped to SELL. Searched only until 4 weeks past the trough — a "break" has to happen during the fall, not months later.
+
+**cross_10pct** — the first week the asset closed 10% below its own running high (same search window). The price-based "break".
+
+**recover_buy** — the first week after the trough that the asset's supertrend flipped back to BUY, searched within 52 weeks.
+
+**own_fall_to_trough** — the asset's own fall from its peak to N100's trough week. Separates "breaks first" from "falls most".
+
+**lead_<measure>** — the asset's date minus N100's date for that measure, in weeks. **Negative = earlier than N100.** Zero = the same week. Blank = the event did not happen in the window (gold rarely falls 10%; the first episode starts before any signal exists).
+
+**rank_<measure>** — within an episode, the assets ordered by that date: 1 = first. Ties share the rank (two assets flipping the same week are both rank 1).
+
+**summary** — per asset, across all episodes: `episodes` it was present in; for each measure the `median_lead_…_weeks`, `first_share_…` (the share of episodes it was first, ties counted), `avg_rank_…`, and `n_…` (episodes where the event happened at all); `median_own_fall`; and a `verdict` naming which asset, among the four indices, had the best average rank on the signal, on the −10% cross, and on the recovery.
+
+## Report §4 — volatility (tables `5_*`)
+
+**Realised volatility / 13-week vol** (`5_vol_rolling`, `vol_<asset>`) — the standard deviation of the last 13 weekly returns × √52, recomputed every week. The "how big are the swings right now" number. 20% means a normal year of such weeks would see swings of about ±20%.
+
+**India VIX** — the other kind of volatility: not what the market did but what Nifty 50 option prices say it *expects* over the next 30 days, annualised (a VIX of 15 ≈ an expected yearly swing of ±15%, about ±4.3% over a month). Realised vol looks back, the VIX looks forward. The file ends 2025-09-15; every VIX-based number stops there (`fetch_vix.py` refreshes it).
+
+**vol by state** (`5_vol_by_state`: `weeks_BUY`, `vol_BUY`, `mean_weekly_ret_BUY`, `share_weeks_down_BUY`, `worst_week_BUY`, `vix_mean_BUY`, `vix_median_BUY`, the same for `SELL`, `vol_all`, `vol_ratio_SELL_over_BUY`, `vix_ratio_SELL_over_BUY`) — each asset's volatility, average weekly return, share of down weeks, worst week and the average VIX level, computed only on the weeks its **own** signal was BUY, and only on the weeks it was SELL. `vol_ratio_SELL_over_BUY` = 1.8 means the asset swings 1.8× as much in its SELL weeks; `vix_ratio` the same for the VIX. **Reading:** SELL weeks are bigger-swing weeks far more than they are down weeks; the VIX separates the states less than realised vol does.
+
+**vol around flip** (`5_vol_around_flip`: `ref`, `event`, `weeks_from_flip`, `vol_<asset>`, `vix_level`, `n_events`) — the event study of §2.2 done on volatility, for **every asset as the reference**: each index's 13-week vol, and the VIX level, at each week from 8 before to 8 after that asset's flips, averaged over its flips.
+
+**vol regime / Q1 … Q5** (`5_corr_by_regime_long`: `regime`, `pair`, `bucket`, `lo`, `hi`, `mean_corr`, `weeks`; one wide table per regime `5_corr_by_regime_<name>` with `Q1`…`Q5`, `Q5_minus_Q1`, `spearman_corr_vs_regime`, `weeks`; `5_corr_by_vol_regime` + `5_vol_regime_edges` are the N100-vol version kept for the chart) — every week sorted into five equal groups by a volatility measure: Q1 the calmest fifth of weeks, Q5 the wildest. For each pair, the average 13-week correlation inside each group. The regime is defined **three ways**: `N100 vol` (the market's 13-week realised vol — one set of edges for all pairs), `pair's own vol` (the average of the two legs' 13-week vol — each pair has its own edges), `VIX level`. `lo`–`hi` = the range of the regime measure inside the group. `Q5_minus_Q1` = how much more correlated the pair is in wild weeks than calm ones; `spearman_corr_vs_regime` = the rank correlation between the pair's correlation series and the regime series (1 = they rise and fall together perfectly).
+
+**together / correlation jumps** (`5_together`: `z_corr`, `z_vol`, `z_vix`, `corr`, `vol`, `vix`; `5_corr_rise_events`; `5_corr_rise_paths`: `series`, `k`, `mean_z`, `median_z`, `n`) — the simple view of "do they move together": the group correlation, N100's 13-week realised vol and the VIX (log level) each as a z-score against its own 104-week history, so all three share one scale (0 = usual, +1 = unusually high). A **correlation jump** = the week `z_corr` first reaches +1 (having been below +0.5), at least 8 weeks after the previous one. `5_corr_rise_events` gives, per jump, each series' z at −8 … +8 weeks and the first week (from −8 to +4) it reached its own +1 (`<series>_first_week_above_1`; negative = before the correlation did). `5_corr_rise_paths` averages the three lines around the jumps. **Reading:** a series that gave warning would be above +1 to the left of week 0.
+
+**vol vs correlation lead** (`5_vol_corr_lead`: `k_weeks`, `corr_dvol_t_dcorr_t_plus_k`, `weeks`, `corr_dvix_t_dcorr_t_plus_k`, `weeks_vix`) — the correlation between the 13-week change in N100's realised vol (and, second column, in the log of the VIX) at week t and the 13-week change in the group correlation G at week t + k. **Reading:** the biggest value at k = 0 means they move together; at k > 0 vol is leading (the correlation change comes k weeks later); at k < 0 correlation leads. `meta.json` (`vol_corr_level`) holds the correlations of the levels and of the VIX with realised vol. **Pair by pair:** `5_vol_corr_lead_pairs` (`pair`, `k_weeks`, …) is the same test with the pair's own vol (the average of its two legs' 13-week vol) against the pair's own correlation.
+
+**together / correlation jumps, pair by pair** (`5_together_pairs`: `a|b` and `z_a|b` = the pair's 13-week correlation and its z-score against its own 104-week history, `v_a|b` and `zv_a|b` = the pair's own realised vol — the average of its two legs' 13-week vol — and its z, `vix` and `z_vix`; `5_corr_rise_paths_pairs` / `5_corr_rise_pairs_summary`: around the *group's* jumps, the pair's z path and whether the pair's own z also reached +1 within −8 … +4 weeks — `jumps`, `share_pair_also_reached_plus1`, `mean_z_at_jump`) — **Reading:** the N100 pairs reach +1 in nearly every group jump, the pairs among the smaller indices in far fewer — a group jump is Nifty re-joining a block that was already coupled.
+
+**which moves first, each pair on its own** (`5_corr_rise_own_events`: `pair`, `event`; `5_corr_rise_paths_own`: `pair`, `series` ∈ {z_corr, z_vol, z_vix}, `k`, `mean_z`, `median_z`, `n`; `5_corr_rise_own_summary`: `jumps`, `z_corr_-4` / `z_corr_+0`, `z_vol_-4` / `z_vol_+0`, `z_vix_-4` / `z_vix_+0`, `share_z_vol_above1_before`, `share_z_vix_above1_before`) — the event study with no group number in it: a pair's jumps are the weeks *its own* correlation z first reaches +1 (having been below +0.5, 8+ weeks apart); around them the pair's correlation z, the pair's own vol z and the VIX z are averaged; `share_*_above1_before` = the share of the pair's jumps in which that series was already above +1 in the 8 weeks before (what a warning would look like). The matching lead/lag bars per pair are `5_vol_corr_lead_pairs` (`corr_dvol_t_dcorr_t_plus_k` with the pair's own vol, `corr_dvix_t_dcorr_t_plus_k` with the VIX). **Reading:** index pairs — own vol up in the jump week, not before, peak at k = 0; gold pairs — their correlation does not move with volatility at all.
+
+## Report Part II §8 — each pair separately (tables `6_*`)
+
+**pair / a | b** — two of the five assets, the first-named always earlier in the config order (N100, MC100, SC100, Micro250, GoldMCX). Ten pairs.
+
+**log ratio** (`6_ratio_bands`: `<pair>__lr`, `__mean`, `__sd`) — ln(P_a ÷ P_b): how a has done against b, cumulatively. Up = a doing better. `__mean` and `__sd` are its trailing 52-week mean and standard deviation (the bands on the chart).
+
+**deviation z / z-score of a pair** (`6_ratio_z`) — (log ratio − its 52-week mean) ÷ its 52-week sd. **z > 0: a has run ahead of b** relative to the last year ("a rich, b cheap"); **z < 0: a has lagged b**. ±1 is ordinary (about a third of weeks), ±2 is a large deviation (about one week in twenty). **Trap:** the z always drifts back toward 0 on its own, because the window gradually absorbs the move; "the z came back" is not "the ratio came back". Reported from 42 weeks of history onward.
+
+**z bucket** (`z < −2`, `−2 ≤ z < −1`, `−1 ≤ z < +1`, `+1 ≤ z < +2`, `z ≥ +2`) — the five ranges the deviation is sorted into.
+
+**pair stats** (`6_pair_stats`) — per pair: `weeks`, `first`, `last`; `corr_full` (whole sample), `corr_13w_now`, `corr_52w_now`, `corr_13w_median/min/max`; `vol_a_full`, `vol_b_full`, `vol_a_13w_now`, `vol_b_13w_now`, `vol_ratio_a_over_b_now`; `beta_a_on_b_52w_now` / `_full` (how much a moves for a 1% move in b, from a regression); `z_now`, `z_date`, `reading_now` (the z in words); `share_weeks_abs_z_gt_1` / `_gt_2` (how often the pair was more than 1 / 2 sd apart); `n_2sd_deviations` (separate occasions |z| reached 2); `z_min`, `z_max`; `ratio_total_change` (a's total out- or under-performance of b over the sample).
+
+**pull-back / cointegration** (`6_pair_coint`) — three tests of whether the ratio has a level it returns to. `adf_p_log_ratio`: the ADF test on the log ratio — below 0.05 means "it has a long-run level" (unit hedge ratio). `eg_p_a_on_b` / `eg_p_b_on_a`: Engle-Granger in each direction — below 0.05 means "there is *some* hedge ratio at which the two share a level". `halflife_weeks_full`: how many weeks a deviation from the full-sample level takes to halve, from an AR(1) fit (∞ if it does not shrink at all). `halflife_weeks_vs_52w_mean`: the same measured against the moving 52-week mean — always finite, because that mean chases the level; it describes the z-score's own decay, not the ratio's. `ratio_drift_per_year`: the ratio's average yearly change — a steady negative number means b has out-run a year after year. `verdict`: "pulls back to a long-run level" (ADF < 0.05 and half-life ≤ 52 wk); "pulls back with a fitted hedge ratio" (EG < 0.05 only); "some pull-back but not statistically established" (ADF < 0.10); otherwise "no long-run level: the ratio drifts (a trend, not a spread)".
+
+**z_forward** (`6_z_forward`: `pair`, `horizon_weeks`, `bucket`, `weeks`, `mean_ratio_change`, `median_ratio_change`, `share_reverted`, `mean_move_toward_mean`, `hac_t_ratio_change`, `mean_ret_a`, `mean_ret_b`) — the empirical pull-back test. Every week is put in its z bucket, and the ratio's change over the **next** 4 or 13 weeks (r_a − r_b summed over t+1..t+h) is averaged inside the bucket. **Reading:** after "a lagged" (z < 0) a pull-back would be a *positive* change; after "a led" (z > 0) a *negative* one. `share_reverted` = the share of weeks the ratio moved back toward its mean at all; `mean_move_toward_mean` = the average move in the pull-back direction (positive = reverting, negative = continuing). `hac_t_ratio_change` is the Newey-West t of the mean change. `pair = ALL PAIRS` pools the ten (the t there is computed on the week-by-week average across pairs).
+
+**path after 2 sd** (`6_path_after_2sd`: `pair`, `weeks_after`, `mean_z`, `median_z`, `share_back_inside_1sd`, `share_crossed_0`, `n_events`) — after each occasion |z| first reached 2, the average z over the next 13 weeks, sign-flipped so every event starts near +2. The *shape* of the decay; see the trap above — it mostly shows the window catching up.
+
+**current** (`6_current`: `z_now`, `z_4w_ago`, `z_13w_ago`, `reading`) — the latest deviation of each pair, in words.
+
+**pair returns** (`6_pair_returns`, per pair) — the two legs' returns side by side over the pair's common sample: `total_a` / `total_b` (exp(sum of log returns) − 1), `annualised_a` / `_b`, `last_13w_a` / `_b`, `last_52w_a` / `_b`, `vol_a` / `_b`, `share_weeks_up_a` / `_b`, `worst_week_a` / `_b`, `best_week_a` / `_b`; `both_BUY_ann_a` / `_b`, `both_SELL_ann_a` / `_b`, `disagree_ann_a` / `_b` = each leg's average weekly return × 52 in the weeks the two signals were both BUY, both SELL, or disagreed (`both_BUY_weeks` etc. = the counts); `spread_<k>` = a minus b for each of those; `share_weeks_a_beat_b`; `corr_full`. **Reading:** the returns the ratio of §7 is made of — `spread_annualised` is how many points a year the first leg beat the second; the both-SELL rows show that the higher-vol leg falls faster when both signals are off.
+
+**pair corr 13w** (`6_pair_corr13`) — each pair's 13-week correlation week by week (panel 3 of the pair charts).
+
+## Report Part II §9 — the pair-trading rule (tables `7_*`)
+
+**the rule** — at the close of week t, if |z| ≥ 2 (`PT_ENTRY`) and no trade is open in that pair: **long the cheap leg, short the rich leg**, one unit each (z > 0 → a rich, so short a and long b; z < 0 → long a, short b). It earns `side × (r_a − r_b)` every week from t+1. Close at the first week |z| ≤ 0.5 (`PT_EXIT`), or after 26 weeks (`PT_MAX_HOLD`), or at the end of the data. Cost 10 bp per leg per side (`PT_COST_BPS`) = 40 bp per round trip.
+
+**trades** (`7_trades`) — one row per trade: `entry_date`, `exit_date`, `weeks` held, `side` (+1 long a / short b, −1 the reverse), `cheap_leg` (the one bought), `rich_leg` (the one sold), `z_entry`, `z_exit`, `exit_reason` (`z back inside`, `max hold`, `end of data`), `gross` (the spread earned, in log-return units: 0.05 = 5 points), `cost`, `net`, `worst_point` (the lowest the running P&L got during the trade), `ret_cheap_leg` / `ret_rich_leg` (each leg's own return over the trade — the long-only view: "had the book held the cheap leg instead of the rich one"), `cheap_leg_state_at_entry` (the bought leg's own signal, +1/−1).
+
+**summary** (`7_summary`, per pair and `ALL PAIRS`) — `trades`, `win_rate_net` (share of trades with net > 0), `mean_net`, `median_net`, `total_net`, `total_gross`, `total_cost`, `t_mean_net` (a plain t on the trade P&Ls — trades never overlap within a pair; needs ≥ 5 trades), `avg_weeks`, `share_exit_z` (closed because the deviation came back inside), `share_exit_max_hold` (still open after 26 weeks), `mean_ret_cheap_leg`, `mean_ret_rich_leg`, `share_cheap_beat_rich`, `worst_trade`, `best_trade`, `mean_worst_point`, `net_per_year` (total net ÷ years of data), `equity_drawdown` (the deepest fall of the trade-by-trade cumulative P&L), `weeks_in_market_share` (share of weeks a trade was open), `verdict` — "worked on this history" needs ≥ 5 trades, mean > 0, win rate ≥ 60% and t ≥ 2; "positive on average but not reliable"; "did not work"; "too few trades".
+
+**equity** (`7_equity`) — the weekly cumulative net P&L per pair and for all pairs added together (the chart).
+
+**sensitivity** (`7_sensitivity`: `entry`, `exit`, `require_cheap_leg_BUY`, `trades`, `win_rate_net`, `mean_net`, `total_net`, `avg_weeks`, `t_mean_net`, `pairs_positive`, `pairs_traded`) — the pooled result with the entry line at 1.5 / 2 / 2.5, the exit line at 0 / 0.5, and with or without the condition that the bought leg's own signal is BUY. Robustness, not a menu: if no setting works, the rule does not work.
+
+## Report Part II §10 — who replaces a SELL (tables `8_*`)
+
+**event / seller** (`8_events`: `seller`, `date`) — a week in which an asset's state goes BUY → SELL. The seller is the asset whose money has to go somewhere.
+
+**candidate** — each of the other four assets (and cash, the liquid ETF `Liquid`, as the plain alternative). Micro250 is a candidate only from 2022.
+
+**candidate rows** (`8_candidates`, one row per event × candidate) — measured **at** the flip week: `corr_52w` (the candidate's 52-week correlation with the seller), `correlated` (that correlation ≥ 0.5, `RP_CORR_MIN`), `z_cand_vs_seller` (the deviation of the candidate against the seller: **+ = the candidate has run ahead of the seller** over the trailing year), `deviation` (`lagging` z ≤ −1, `leading` z ≥ +1, `neutral` between, `no z` when there is not yet a year of history), `cand_state` (the candidate's own signal, BUY / SELL), `cand_rel_13w` (the candidate's 13-week return minus the seller's), `cand_ret_13w`, `seller_ret_13w`. Measured **after** the flip: `fwd_cand_4` / `_13` (the candidate's return over t+1..t+4 / t+13), `fwd_seller_4` / `_13` (the seller's own — "staying put"), `fwd_cash_4` / `_13`, `fwd_gold_4` / `_13`; `hold_ret`, `hold_weeks`, `hold_end` (the candidate's return from t+1 until the first week its **own** signal is SELL, capped at 26 weeks; how it ended: `own SELL`, `cap`, `end of data`), `hold_seller_ret` and `hold_cash_ret` (the seller and cash over those same weeks).
+
+**cells** (`8_cells`: `horizon_weeks`, `deviation`, `correlated`, `cand_state`, `rows`, `events`, `cand_mean`, `cand_median`, `cand_hit_positive`, `stay_mean`, `cash_mean`, `cand_minus_stay`, `cand_minus_cash`, `share_cand_beat_stay`, `share_cand_beat_cash`) — the candidate rows grouped by deviation × correlated × own state (`any` = pooled over that dimension). `rows` counts candidate rows, `events` distinct flips. **Reading:** compare `cand_mean` with `stay_mean` (the seller) and `cash_mean`; the `share_…` columns say how often the candidate won.
+
+**by_pair** (`8_by_pair`) — seller × candidate: `events`, `avg_corr_52w`, `avg_z_cand_vs_seller`, `share_lagging`, `share_leading`, `share_cand_in_BUY`, `cand_mean_4/13`, `stay_mean_4/13`, `cash_mean_4/13`, `share_cand_beat_cash_4/13`, `hold_mean`, `hold_weeks_mean`, `hold_seller_mean`, `hold_cash_mean`. "How did entering B after A's SELL flips go."
+
+**rules** (`8_rules`, one row per rule; `8_rule_picks` has the pick per event) — twelve replacement rules applied to the **same** flips, one pick each, falling back to cash when the rule finds nobody: `stay in the seller`; `cash`; `gold` (cash when gold is the seller); `most correlated` (highest 52w corr with the seller); `most correlated, in BUY`; `correlated & lagging` (corr ≥ 0.5 and z ≤ −1, the most correlated of them); `correlated & lagging, in BUY`; `correlated & leading` (corr ≥ 0.5 and z ≥ +1); `correlated & leading, in BUY`; `most lagging (any corr)` (lowest z); `most leading (any corr)` (highest z); `best 13w momentum, in BUY` (the BUY-state candidate with the highest own 13-week return). Columns: `events`, `share_with_a_pick` (how often the rule found someone — the rest of the time it sat in cash), `events_with_a_pick`, `mean_h`, `median_h`, `hit_positive_h`, `beat_cash_h`, `beat_stay_h`, `minus_cash_h` (the rule's average edge over cash), `hac_t_minus_cash_h` (its Newey-West t, only with ≥ 20 events), `worst_h`, `when_pick_mean_h` / `when_pick_minus_cash_h` / `when_pick_beat_cash_h` / `when_pick_beat_stay_h` (the same, counting only the events where the rule actually picked someone), `hold_mean` / `hold_weeks_mean` (the pick held until its own SELL). `8_rules_by_seller` splits the main columns by seller.
+
+**z path** (`8_z_path`: `seller`, `candidate`, `k`, `mean_z`, `median_z`, `n`; `8_event_paths` per event) — the deviation of each candidate against the seller at each week from 13 before the seller's flip to 13 after, averaged over the seller's flips; `candidate = all candidates` pools the four. **Reading:** a line still rising after week 0 means the seller kept falling behind the others after its signal fired.
+
+**current** (`8_current`) — the latest week: for every asset, each candidate's `corr_52w`, `correlated`, `z_cand_vs_seller`, `deviation` and `cand_state`, with `seller_state` saying whether that asset is in SELL now.
+
+## How to read the answers together
+
+- **SELL weeks are volatility weeks.** The pair is a little more correlated and a lot more volatile; ~94% of the extra covariance is volatility. Volatility and correlation rise together, after the flip, not before. Neither warns.
+- **The z-score comes back; the ratio need not.** The deviation z decays by construction. Whether a deviation *reverts* is answered only by `6_z_forward` (the ratio's later change) and `6_pair_coint` — and in these pairs, 1–2 sd deviations have continued, not reverted.
+- **So the pair trade fails and the laggard is the wrong replacement.** Buying the lagging leg is betting against a trend in progress (`7_summary`). A correlated asset that has *lagged* a seller is almost always in SELL itself — the "correlated & lagging, in BUY" rule never found a candidate. What has worked after a SELL flip is the candidate whose own signal is BUY: the most *leading* asset, the most correlated BUY-state asset, or gold (`8_rules`).
+- **"Who breaks the correlation first" has three honest answers** (by date, by depth, by collapse) and one robust one: smaller indices decouple upward, Nifty downward.
+- **Price vs signal are different questions.** Smallcap falls 10% first; Nifty 100's signal fires first, because the supertrend band scales with each asset's own volatility.
+- **Small samples where it matters.** Ten correlation episodes, six sell-offs, sixty SELL flips, eighty-odd pair trades. Ranks and medians where t-stats would mislead; Newey-West t-stats where there are enough weeks.

@@ -1,0 +1,2 @@
+# Starting prompt
+You are in `wm-BREAK` (Study I). Read README.md and GLOSSARY.md. Run `python data.py`, `python run_all.py`, `python make_report.py`, `python checks.py`; report the pass count. Then read §0 of outputs/report.html back in plain words; for §7 pick two pairs and say in one sentence each whether their deviation pulls back; for §9 say which replacement rule won and why 'correlated & lagging, in BUY' never fired. Change nothing in config.py without writing the reason into UNDERSTANDING.md first and asking.
