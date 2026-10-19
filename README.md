@@ -21,8 +21,8 @@ Part II (folded away at the end of the report, each with its one-line finding vi
     python run_all.py          # ~50 s (add --no-charts to skip the static PNGs)
     python make_report.py      # outputs/report.html — the CLEAN report (~10 MB; interactive, works offline)
     python make_report_full.py # outputs/report_full.html — everything expanded, five-part scaffold per section
-    python make_guide.py       # outputs/report_guide.html — the READING GUIDE: every question with its answer, every chart with what is on it and a reading per pair / per asset, every column name
-    python checks.py           # 71 checks; must say "0 failed"
+    python make_guide.py       # outputs/report_guide.html — the READING GUIDE (B1–B15 + B10b the ratio study; B16–B20 off via GUIDE_INCLUDE_TRADES): every question with its answer, every chart with what is on it and a reading per pair / per asset, every column name
+    python checks.py           # 87 checks; must say "0 failed"
 
 Read `GLOSSARY.md` first — every term and column, in plain words. `LOGIC.md` has the exact definitions. The clean report keeps one shape per chapter — *the question → the answer in one line → how we know (the chart, and where on it to look) → the key numbers as tiles → what it means for the book* — with the detail (every episode, every trade, the extra tables and charts) folded into collapsible **More…** boxes; the full report expands all of it with a five-part scaffold (question, method, how to read, what it says, what it does not say). §0 of the clean report is the seven answers; §1 walks one sell-off (the March-2020 N100 flip) through every measure the report uses — correlation, volatility, the VIX, the signal, gold — on one table, before the measures are used across the whole history; every technical word is dotted-underlined and shows its meaning on hover. Wherever a study uses the group correlation G, it is repeated for every pair and the pair lines are on the same chart (gold pairs dashed, off until clicked; one colour per pair throughout), with the `_pairs` tables beside the group tables. **Every chart's bold title is its finding and the grey line under it is the method**; boxed notes on the chart point at where the finding can be seen. **Charts are interactive:** hover for values, click a legend entry to add or remove a trace, double-click to isolate it, drag to zoom.
 
@@ -39,12 +39,12 @@ Read `GLOSSARY.md` first — every term and column, in plain words. `LOGIC.md` h
 `data/index_ohlcv_all.csv`, `data/MAUc1_daily.csv` (from a sibling repo). Optional: `india_vix.csv` (one timeline chart), `liquidEtfFinal.csv` (the cash comparator `Liquid` in §9; without it the cash columns are blank).
 
 ## Tables (`outputs/tables/`, prefixed by module)
-`0_corr_matrix_{full,52w,13w}`, `0_corr_matrix_coverage` ·
+`0_corr_matrix_{full,52w,13w}`, `0_corr_matrix_coverage`, `0_gold_corr_{weekly,rank}`, `0_gold_{by_group_corr,around_decoupling,in_episodes}`, `0_gold_vs_group_{weekly,fit,bins}`, `0_gold_gap_{stats,after_extreme,weekly}`, `0_gold_after_break_{paths,avg,episodes}` ·
 `1_corr_by_signal_state`, `1_cov_decomposition`, `1_corr_around_flip` (every asset as the reference), `1_corr_by_breadth`, `1_corr_timeseries` ·
-`2_by_year`, `2_corr_quintile_returns` (+ `_long`), `2_timeline`, `2_high_corr_episodes` ·
+`2_by_year` (+ `_pairs`), `2_corr_quintile_returns` (+ `_long`, `_pairs`; next 4 weeks and next quarter), `2_timeline`, `2_high_corr_episodes` (+ `_pairs`, `2_high_corr_pairs_summary`), `2_ratio_study`, `2_ratio_weekly` ·
 `3_corr_series`, `3_corr_episodes`, `3_asset_breaks`, `3_summary`, `3_rank_{date,deepest,drop}`, `3_lead_weeks`, `3_pair_breaks`, `3_pair_summary`, `3_before_selloff`, `3_after_break(_summary)`, `3_sensitivity` ·
 `4_price_episodes`, `4_dates_and_leads`, `4_lead_{…}`, `4_rank_{…}`, `4_summary` ·
-`5_vol_rolling`, `5_vol_by_state`, `5_vol_around_flip`, `5_corr_by_regime_long` (+ one wide table per regime), `5_corr_by_vol_regime` (+ `_long`, `5_vol_regime_edges`), `5_vol_corr_lead`, `5_vol_timeseries` ·
+`5_vol_rolling`, `5_vol_by_state`, `5_state_points`, `5_state_dist`, `5_vol_around_flip`, `5_corr_by_regime_long` (+ one wide table per regime, `5_regime_weeks`), `5_regime_weekly`, `5_regime_stretches`, `5_corr_by_vol_regime` (+ `_long`, `5_vol_regime_edges`), `5_atr_pct_weekly`, `5_vol_corr_lead` (+ `_pairs`; overlapping, kept for reference), `5_lead_lag_blocks`, `5_lead_lag_verdicts` (no overlapping weeks), `5_together` (+ `_pairs`), `5_corr_rise_*`, `5_vix_surges`, `5_vix_flip_{events,summary,paths}`, `5_vix_surge_events`, `5_vol_timeseries` ·
 `6_ratio_z`, `6_ratio_bands`, `6_pair_stats`, `6_pair_returns`, `6_pair_coint`, `6_z_forward`, `6_path_after_2sd`, `6_current`, `6_pair_corr13` ·
 `7_trades`, `7_summary`, `7_equity`, `7_sensitivity` ·
 `8_events`, `8_candidates`, `8_cells`, `8_by_pair`, `8_rules`, `8_rule_picks`, `8_rules_by_seller`, `8_event_paths`, `8_z_path`, `8_current`

@@ -59,11 +59,18 @@ SIGNAL_BAR = "W-FRI"
 CORR_WINDOW = 13                 # rolling window (weeks) for the "current" correlation - one quarter
 FLIP_WINDOW = 8                  # weeks before / after a flip in the event-study
 MIN_CELL = 20                    # weeks needed before a cell's correlation is reported
+FLIP_EXCLUDE_YEAR = 2020         # the around-flip study is repeated without the flips of this year (the COVID crash, when correlation went to 1) and with the median
 
 # ------------------------------------------ 2. correlation vs returns --
 HIST_WINDOW = 13                 # trailing-quarter correlation and trailing-quarter return
-FWD_WINDOW = 13                  # the following quarter
+FWD_WINDOW = 13                  # the following quarter (kept in the tables)
+QUINT_FWD = 4                    # weeks: the forward return the quintile chart shows (t+1 … t+4) — Manu, 2026-10-19: "4 weeks forward rather than 13"
 N_BUCKETS = 5
+GAP_SD = 1.0                     # the SC100×Gold − N100×Gold gap counts as "extreme" beyond this many of its own sd
+GAP_FWD = (4, 13)                # weeks ahead for what followed an extreme gap
+GOLD_AFTER_BREAK = 26            # weeks after a decorrelation episode starts over which the gold pairs' correlation is followed
+RATIO_BACK = 4                   # weeks: the ratio's change over the last 4 weeks (t−3 … t)
+RATIO_FWD = 4                    # weeks: the ratio's change over the next 4 weeks (t+1 … t+4)
 
 # ------------------------------------- 3. who breaks the CORRELATION first --
 CB_WINDOW = 13                   # weeks: each asset's "current" correlation with the others
@@ -86,7 +93,13 @@ RECOVERY_WINDOW = 52             # weeks after the trough in which the first BUY
 # --------------------------------------------------------- 5. volatility --
 VOL_WINDOW = 13                  # weeks: realised volatility (sd of weekly returns x sqrt 52), recomputed every week
 VOL_BUCKETS = 5                  # quintiles of N100's rolling vol = the "vol regimes"
-VOL_LEAD_LAGS = 4                # weeks: lead / lag between changes in vol and changes in correlation
+VOL_LEAD_LAGS = 4                # weeks: lead / lag between changes in vol and changes in correlation (the first version of B9 — its windows overlap)
+LL_BLOCKS = (4, 13)              # weeks: the block lengths of the NON-overlapping lead/lag study (B9 redone 2026-10-19) — X on t−L+1 … t, Y on t+1 … t+L
+LL_MIN_N = 20                    # blocks needed before a lead/lag number is reported
+VIX_SURGE = 0.25                 # a VIX "surge" = the VIX level up at least this much (25%) over VIX_SURGE_WEEKS weeks, counted once per run
+VIX_SURGE_WEEKS = 4
+VIX_FLIP_WINDOW = 8              # weeks: a surge and a SELL flip within this many weeks of each other count as "related"; also the path length around each
+REGIME_STRETCH_MIN = 2           # weeks: a run of the pair's own vol in its wildest fifth (Q5) must last this long to be listed as a stretch
 
 # ----------------------------------------------------------- 6. each pair --
 PAIR_WINDOW = 52                 # weeks: the deviation window - the ratio z-score is judged against its own trailing year
@@ -120,3 +133,6 @@ REPORT_HTML = OUT / "report.html"             # the clean report (make_report.py
 REPORT_FULL_HTML = OUT / "report_full.html"   # every table and chart (make_report_full.py)
 REPORT_GUIDE_HTML = OUT / "report_guide.html" # the reading guide: questions, chart by chart, column dictionary (make_guide.py)
 CHART_DPI = 150
+
+# ---- 9. the reading guide
+GUIDE_INCLUDE_TRADES = False     # B16–B20 (deviations & pair cards, the pair-trading rule, who replaces a SELL) — switched off 2026-10-16; the tables and the full report keep them

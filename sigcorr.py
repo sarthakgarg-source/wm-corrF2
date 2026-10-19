@@ -106,17 +106,20 @@ def around_flip(st: pd.DataFrame, r: pd.DataFrame, refs: list[str] | None = None
         for direction, val in (("flip to SELL", -1), ("flip to BUY", 1)):
             flips = mc.index[((s == val) & (s.shift(1) == -val)).fillna(False)]
             for k in range(-C.FLIP_WINDOW, C.FLIP_WINDOW + 1):
-                g, o, rt = [], [], []
+                g, gx, o, rt = [], [], [], []
                 for d in flips:
                     i = mc.index.get_loc(d) + k
                     if 0 <= i < len(mc):
                         if pd.notna(mc.iloc[i]):
                             g.append(mc.iloc[i])
+                            if d.year != C.FLIP_EXCLUDE_YEAR:
+                                gx.append(mc.iloc[i])
                         if pd.notna(own.iloc[i]):
                             o.append(own.iloc[i])
                         if pd.notna(ret13.iloc[i]):
                             rt.append(ret13.iloc[i])
                 rows.append({"ref": ref, "event": direction, "weeks_from_flip": k, "mean_corr": float(np.mean(g)) if g else np.nan,
+                             "median_corr": float(np.median(g)) if g else np.nan, f"mean_corr_ex{C.FLIP_EXCLUDE_YEAR}": float(np.mean(gx)) if gx else np.nan, f"n_events_ex{C.FLIP_EXCLUDE_YEAR}": len(gx),
                              "ref_own_corr": float(np.mean(o)) if o else np.nan, "n_events": len(g), "ref_trailing_13w_return": float(np.mean(rt)) if rt else np.nan})
     return pd.DataFrame(rows)
 
@@ -130,13 +133,17 @@ def around_flip_pairs(st: pd.DataFrame, r: pd.DataFrame, refs: list[str] | None 
     for ref in refs:
         s = st[ref].reindex(PC.index)
         for direction, val in (("flip to SELL", -1), ("flip to BUY", 1)):
-            flips = [PC.index.get_loc(d) for d in PC.index[((s == val) & (s.shift(1) == -val)).fillna(False)]]
+            fd = PC.index[((s == val) & (s.shift(1) == -val)).fillna(False)]
+            flips = [PC.index.get_loc(d) for d in fd]
+            keep = [PC.index.get_loc(d) for d in fd if d.year != C.FLIP_EXCLUDE_YEAR]
             for k in range(-C.FLIP_WINDOW, C.FLIP_WINDOW + 1):
                 idx = [i + k for i in flips if 0 <= i + k < len(PC)]
-                sub = PC.iloc[idx]
+                idx_x = [i + k for i in keep if 0 <= i + k < len(PC)]
+                sub = PC.iloc[idx]; subx = PC.iloc[idx_x]
                 for p in PC.columns:
-                    v = sub[p].dropna()
-                    rows.append({"ref": ref, "event": direction, "pair": p, "weeks_from_flip": k, "mean_corr": float(v.mean()) if len(v) else np.nan, "n_events": int(len(v))})
+                    v = sub[p].dropna(); vx = subx[p].dropna()
+                    rows.append({"ref": ref, "event": direction, "pair": p, "weeks_from_flip": k, "mean_corr": float(v.mean()) if len(v) else np.nan, "median_corr": float(v.median()) if len(v) else np.nan,
+                                 f"mean_corr_ex{C.FLIP_EXCLUDE_YEAR}": float(vx.mean()) if len(vx) else np.nan, "n_events": int(len(v)), f"n_events_ex{C.FLIP_EXCLUDE_YEAR}": int(len(vx))})
     return pd.DataFrame(rows)
 
 

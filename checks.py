@@ -231,6 +231,78 @@ def main() -> int:
     check("G together_pairs: the pair's own vol = the mean of its two legs' 13-week vol", np.allclose(tp_["v_N100|SC100"].dropna(), ((vol.rolling_vol(rw)["N100"] + vol.rolling_vol(rw)["SC100"]) / 2).dropna(), atol=1e-9))
     check("G together_pairs: level and z for all ten pairs; z is the pair's own 104-week z-score", set(c for c in tp_.columns if "|" in c and not c.startswith(("z_", "v_", "zv_"))) == ten and np.allclose(tp_["z_N100|SC100"].dropna(), ((tp_["N100|SC100"] - tp_["N100|SC100"].rolling(C.CB_NORM, min_periods=int(0.5 * C.CB_NORM)).mean()) / tp_["N100|SC100"].rolling(C.CB_NORM, min_periods=int(0.5 * C.CB_NORM)).std()).dropna(), atol=1e-9))
 
+    atr_ = vol.atr_pct(panel)
+    import supertrend as ST_
+    bars_ = ST_.resample_ohlc(panel["N100"], C.SIGNAL_BAR)
+    check("G atr_pct = the desk's 5-bar LW ATR on weekly bars divided by the close, from START", np.isclose(atr_["N100"].dropna().iloc[-1], (ST_.atr(bars_) / bars_["close"]).dropna().iloc[-1]) and atr_.index[0] >= pd.Timestamp(C.START))
+    regs_, regl2 = vol.corr_by_regime(rw, lvl, atrp=atr_)
+    check("G corr_by_regime carries each leg's vol and the ATR regimes, with weeks per fifth summing to the pair's weeks", {"first leg's vol", "second leg's vol", "N100 ATR%", "pair's own ATR%"} <= set(regs_) and int(regl2[(regl2["regime"] == "pair's own vol") & (regl2["pair"] == "N100|SC100")]["weeks"].sum()) == int(sigcorr.pair_corrs(rw)["N100|SC100"].notna().sum()))
+    gwk_, gsum_ = histcorr.gold_corr_rank(rw)
+    PCg = sigcorr.pair_corrs(rw)
+    both_ = PCg[["SC100|GoldMCX", "N100|GoldMCX"]].dropna()
+    check("G gold_corr_rank: weeks SC100xGold > N100xGold counted on the weeks both exist", int(gsum_.loc["SC100", "weeks_above_N100"]) == int((both_["SC100|GoldMCX"] > both_["N100|GoldMCX"]).sum()) and int(gsum_.loc["SC100", "weeks_compared"]) == len(both_))
+    gq_, gpath_, gper_ = histcorr.gold_when_decoupled(rw, corrbreak.episodes(corrbreak.series(rw)))
+    check("G gold_when_decoupled: five G-quintiles per gold pair with the weeks summing to the pair's weeks; |corr| >= |mean corr| in every cell", all(int(gq_[gq_["pair"] == p]["weeks"].sum()) == int(PCg[p].notna().sum()) for p in set(gq_["pair"])) and (gq_["mean_abs_corr"] >= gq_["mean_corr"].abs() - 1e-12).all())
+
+    print("H. Manu's review, 2026-10-19")
+    # H1. the around-flip robustness columns: the median is the median over the same flips; ex-year drops exactly that year's flips
+    afr = sigcorr.around_flip(st, rw, refs=["N100"]); sellf = afr[afr["event"] == "flip to SELL"].set_index("weeks_from_flip")
+    sN = st["N100"].reindex(rw.index); fl_ = rw.index[((sN == -1) & (sN.shift(1) == 1)).fillna(False)]
+    Gm_ = sigcorr.rolling_mean_corr(rw, C.EQUITY)
+    at0 = Gm_.loc[fl_].dropna(); at0x = Gm_.loc[[d for d in fl_ if d.year != C.FLIP_EXCLUDE_YEAR]].dropna()
+    check("H around_flip: median_corr at k = 0 is the median of G over the flip weeks; mean_corr_exYEAR drops that year's flips", np.isclose(sellf.loc[0, "median_corr"], at0.median()) and np.isclose(sellf.loc[0, f"mean_corr_ex{C.FLIP_EXCLUDE_YEAR}"], at0x.mean()) and int(sellf.loc[0, f"n_events_ex{C.FLIP_EXCLUDE_YEAR}"]) == len(at0x) and len(at0x) < len(at0))
+    # H2. the quintile hit rate counts only weeks with a forward return; the next-QUINT_FWD-week return is t+1..t+F
+    lgq, _ = histcorr.same_quarter(rw)
+    q5 = lgq[(lgq["asset"] == "N100") & (lgq["bucket"] == "Q5")].iloc[0]
+    mcq = sigcorr.rolling_mean_corr(rw, C.EQUITY, C.HIST_WINDOW); bkq = pd.qcut(mcq, C.N_BUCKETS, labels=[f"Q{i + 1}" for i in range(C.N_BUCKETS)])
+    fwdq = rw["N100"].shift(-1).rolling(C.QUINT_FWD).sum().shift(-(C.QUINT_FWD - 1)); inq5 = fwdq[bkq == "Q5"].dropna()
+    i_ = rw.index.get_loc(inq5.index[10])
+    check("H same_quarter: the next-F-week return = t+1..t+F; hit = share positive over the weeks that HAVE a forward return", np.isclose(inq5.iloc[10], rw["N100"].iloc[i_ + 1:i_ + 1 + C.QUINT_FWD].sum()) and np.isclose(q5[f"next_{C.QUINT_FWD}w_hit"], (inq5 > 0).mean()) and int(q5[f"n_next_{C.QUINT_FWD}w"]) == len(inq5) and len(inq5) <= int(q5["weeks"]) and int(q5["n_next"]) < int(q5["weeks"]))
+    # H3. the gold-vs-group fit: the slope is OLS of y on G and the deciles hold the weeks
+    gvw_, gvf_, gvb_ = histcorr.gold_vs_group(rw)
+    d_ = gvw_[["G", "N100|GoldMCX"]].dropna(); b_ = np.polyfit(d_["G"], d_["N100|GoldMCX"], 1)[0]
+    check("H gold_vs_group: slope = OLS of the gold-pair correlation on G; Pearson matches; decile weeks sum to n", np.isclose(gvf_.loc["N100|GoldMCX", "slope"], b_) and np.isclose(gvf_.loc["N100|GoldMCX", "pearson"], d_["G"].corr(d_["N100|GoldMCX"])) and int(gvb_[gvb_["y"] == "N100|GoldMCX"]["weeks"].sum()) == int(gvf_.loc["N100|GoldMCX", "n"]))
+    # H4. the gap: the AR(1) half-life follows from phi; an extreme's forward return uses t+1..t+h; events are first weeks of runs
+    ggs_, gga_, ggw_ = histcorr.gap_reversion(rw)
+    s0_ = ggs_.iloc[0]; gap_ = ggw_["gap"].dropna()
+    up_ = (gap_ > s0_["mean"] + C.GAP_SD * s0_["sd"]); starts_ = gap_.index[up_ & ~up_.shift(1, fill_value=False)]
+    a4_ = gga_[(gga_["horizon_weeks"] == C.GAP_FWD[0]) & gga_["extreme"].str.contains("above")].iloc[0]
+    relf = (rw["SC100"] - rw["N100"]).shift(-1).rolling(C.GAP_FWD[0]).sum().shift(-(C.GAP_FWD[0] - 1))
+    ok_ = [d for d in starts_ if pd.notna((ggw_["gap"].shift(-C.GAP_FWD[0]) - ggw_["gap"]).get(d))]
+    check("H gap_reversion: half-life = -ln2/ln(phi); events = first weeks of runs beyond +1 sd; forward relative return = t+1..t+h", np.isclose(s0_["half_life_weeks"], -np.log(2) / np.log(s0_["ar1_phi"])) and int(a4_["events"]) == len(ok_) and np.isclose(a4_["SC100_minus_N100_mean"], relf.loc[ok_].mean()))
+    # H5. gold after a break: k = 0 is the episode's first week and the positive-week count is what it says
+    gbp_, gba_, gbe_ = histcorr.gold_after_break(rw, corrbreak.episodes(corrbreak.series(rw)))
+    e0 = gbe_.iloc[0]; seg_ = PCg[e0["pair"]].loc[pd.Timestamp(e0["start"]):].iloc[:C.GOLD_AFTER_BREAK + 1]
+    check("H gold_after_break: corr_at_break = the pair's correlation in the episode's first week; positive weeks counted over the window", np.isclose(e0["corr_at_break"], seg_.iloc[0]) and int(e0[f"weeks_positive_of_first_{C.GOLD_AFTER_BREAK}"]) == int((seg_ > 0).sum()))
+    # H6. the non-overlapping lead/lag: X on t-L+1..t and Y on t+1..t+L share no week, and the level rows are those block values
+    L_ = C.LL_BLOCKS[0]
+    cL = rw["N100"].rolling(L_).corr(rw["SC100"]); vL = (rw["N100"].rolling(L_).std() + rw["SC100"].rolling(L_).std()) / 2 * np.sqrt(C.ANNUALISE)
+    llt = vol.lead_lag_blocks(rw[["N100", "SC100"]], None, blocks=(L_,))
+    lev = llt[(llt["direction"] == "correlation → own vol") & (llt["kind"] == "level")].iloc[0]
+    man = pd.DataFrame({"x": cL, "y": vL.shift(-L_)}).dropna()
+    j_ = rw.index.get_loc(man.index[50])
+    y_manual = (rw["N100"].iloc[j_ + 1:j_ + 1 + L_].std() + rw["SC100"].iloc[j_ + 1:j_ + 1 + L_].std()) / 2 * np.sqrt(C.ANNUALISE)
+    check("H lead_lag_blocks: Y is the block t+1..t+L (no week shared with X's block t-L+1..t); Pearson matches; the non-overlapping sample steps every L weeks", np.isclose(man["y"].iloc[50], y_manual) and np.isclose(lev["pearson"], man["x"].corr(man["y"])) and int(lev["n_nonoverlap"]) == len(man.iloc[::L_]))
+    # H7. the VIX surge and the flip lead/lag
+    if lvl is not None and len(lvl.dropna()):
+        sg_ = vol.vix_surges(lvl, rw.index); x_ = lvl.reindex(rw.index); ch_ = x_ / x_.shift(C.VIX_SURGE_WEEKS) - 1
+        check("H vix_surges: each surge is the FIRST week of a run with the VIX up >= VIX_SURGE over VIX_SURGE_WEEKS", all(ch_.loc[d] >= C.VIX_SURGE and not (ch_.shift(1).loc[d] >= C.VIX_SURGE) for d in sg_["date"]) and len(sg_) > 0)
+        vfe_, vse_, vfs_, vfp_ = vol.vix_vs_flips(st, rw, lvl)
+        fN = vfe_[(vfe_["asset"] == "N100") & vfe_["vix_data"]]
+        check("H vix_vs_flips: the share of flips with a surge before = the share with a surge within VIX_FLIP_WINDOW weeks before; the path at k = 0 is 1", np.isclose(vfs_.loc["N100", "share_flips_with_surge_before"], fN["weeks_since_last_surge"].notna().mean()) and (fN["weeks_since_last_surge"].dropna().between(1, C.VIX_FLIP_WINDOW)).all() and np.isclose(vfp_.set_index("k").loc[0, "vix_ratio_to_flip_week_mean"], 1.0))
+    # H8. the state distribution and the regime stretches
+    pts_ = vol.state_points(st, rw, lvl); sd_ = vol.state_dist(pts_)
+    rowN = sd_[(sd_["asset"] == "N100") & (sd_["state"] == "SELL") & (sd_["measure"] == "abs_weekly_return")].iloc[0]
+    xs_ = rw["N100"].abs()[st["N100"].reindex(rw.index) == -1].dropna()
+    check("H state_dist: n / median / max of |weekly return| in N100's SELL weeks match the raw weeks", int(rowN["n"]) == len(xs_) and np.isclose(rowN["median"], xs_.median()) and np.isclose(rowN["max"], xs_.max()))
+    rwk_ = vol.regime_weekly(rw); stx_ = vol.regime_stretches(rwk_)
+    r0 = stx_[stx_["pair"] == "N100|SC100"].iloc[0]
+    check("H regime_stretches: every week of a stretch is in Q5 of the pair's own vol; weeks and corr_inside match", (rwk_["q_N100|SC100"].loc[pd.Timestamp(r0["start"]):pd.Timestamp(r0["end"])] == "Q5").all() and int(r0["weeks"]) == len(rwk_.loc[pd.Timestamp(r0["start"]):pd.Timestamp(r0["end"])]) and np.isclose(r0["corr_inside"], rwk_["N100|SC100"].loc[pd.Timestamp(r0["start"]):pd.Timestamp(r0["end"])].mean()))
+    # H9. the ratio study: the forward change is the first leg's return minus the second's over t+1..t+F
+    rs_, rsw_ = histcorr.ratio_study(rw, st)
+    w0 = rsw_[(rsw_["pair"] == "N100|MC100")].dropna(subset=["next"]).iloc[20]; k_ = rw.index.get_loc(pd.Timestamp(w0["date"]))
+    check("H ratio_study: next = (r_a - r_b) summed over t+1..t+F; past over t-B+1..t; quintiles equal within a pair", np.isclose(w0["next"], (rw["N100"] - rw["MC100"]).iloc[k_ + 1:k_ + 1 + C.RATIO_FWD].sum()) and np.isclose(w0["past"], (rw["N100"] - rw["MC100"]).iloc[k_ - C.RATIO_BACK + 1:k_ + 1].sum()) and (rs_[(rs_["pair"] == "N100|MC100") & (rs_["cut"] == "correlation quintile")]["weeks"].max() - rs_[(rs_["pair"] == "N100|MC100") & (rs_["cut"] == "correlation quintile")]["weeks"].min()) <= 1)
+
     print("F. replacement")
     stf = pd.DataFrame(1, index=wk3, columns=["N100", "MC100", "SC100"], dtype=float)
     stf.loc[wk3[300]:wk3[320], "N100"] = -1                   # N100 flips to SELL at week 300, back to BUY at 321
@@ -270,7 +342,8 @@ def main() -> int:
     gd = C.REPORT_GUIDE_HTML
     check("D reading guide exists with its three parts and no failed chart", gd.exists() and all(s in gd.read_text(encoding="utf-8") for s in ("Part A", "Part B", "Part C", "Reading it for each combination")) and "failed:" not in gd.read_text(encoding="utf-8"))
     gtxt = gd.read_text(encoding="utf-8") if gd.exists() else ""
-    check("D reading guide reads every G study pair by pair (around flips, breadth, lead, jumps, quintiles, >0.90, breaks, replacement)", gtxt.count("Reading it for each pair") >= 8 and all(f"fig_{n}" in gtxt for n in ("1_corr_around_flip_pairs", "1_corr_by_breadth", "2_corr_quintiles_pairs", "5_vol_corr_lead", "5_vol_corr_lead_pairs", "5_together", "5_together_pairs", "5_corr_rise_paths", "5_corr_rise_paths_own")))
+    check("D reading guide reads every G study pair by pair (around flips, breadth, lead, jumps, quintiles, >0.90, breaks, replacement)", gtxt.count("Reading it for each pair") >= 6 and all(f"fig_{n}" in gtxt for n in ("1_corr_around_flip_pairs", "1_corr_by_breadth", "2_corr_quintiles_pairs", "5_vol_corr_lead", "5_vol_corr_lead_pairs", "5_together", "5_together_pairs", "5_corr_rise_paths", "5_corr_rise_paths_own", "0_gold_when_decoupled", "5_corr_by_regime_more")))
+    check("D reading guide carries the 2026-10-19 additions (gold scatter / gap / after-break, state distribution, VIX vs flip, regime components, non-overlapping lead/lag, ratio) and checks Manu's inferences", all(f"fig_{n}" in gtxt for n in ("0_gold_vs_group", "0_gold_gap_reversion", "0_gold_after_break", "5_vol_state_box", "5_vix_flip_leadlag", "5_regime_scatter", "5_regime_timeline", "5_lead_lag_blocks", "2_ratio_by_corr", "2_ratio_by_state")) and "Inference → what the non-overlapping test says" in gtxt and "B10b" in gtxt)
 
     print(f"\n{len(P)} passed, {len(F)} failed")
     if data.is_synthetic():
