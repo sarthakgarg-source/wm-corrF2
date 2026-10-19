@@ -84,7 +84,7 @@ def state_points(st: pd.DataFrame, r: pd.DataFrame, lvl: pd.Series | None = None
 
 
 def state_dist(pts: pd.DataFrame) -> pd.DataFrame:
-    """B7 (Manu): the distribution, not just the average — per asset and own-signal state, for each measure: n, min, p25,
+    """B7 (review of 2026-10-19): the distribution, not just the average — per asset and own-signal state, for each measure: n, min, p25,
     median, mean, p75, max, sd. Measures: |weekly return|, the 13-week realised vol, the VIX level, its weekly change and |change|."""
     measures = [m for m in ("abs_weekly_return", "vol_13w", "vix", "vix_weekly_change", "abs_vix_weekly_change") if m in pts.columns]
     rows = []
@@ -111,7 +111,7 @@ def vix_surges(lvl: pd.Series, idx: pd.Index, pct: float = C.VIX_SURGE, weeks: i
 
 
 def vix_vs_flips(st: pd.DataFrame, r: pd.DataFrame, lvl: pd.Series, window: int = C.VIX_FLIP_WINDOW) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """B7 (Manu): is the VIX a leading or a lagging indicator of the supertrend's SELL flip? Both directions:
+    """B7 (review of 2026-10-19): is the VIX a leading or a lagging indicator of the supertrend's SELL flip? Both directions:
     (a) per SELL flip of each asset: the nearest VIX surge before it (weeks) and after it (weeks), within `window`;
         the VIX's change over the 4 weeks before the flip and over the 4 after;
     (b) per VIX surge: for each index, whether its signal was already in SELL at the surge, the weeks since its last SELL flip
@@ -341,7 +341,7 @@ def _block_stats(x: pd.Series, y: pd.Series, lag: int, min_n: int = C.LL_MIN_N) 
 
 
 def lead_lag_blocks(r: pd.DataFrame, lvl: pd.Series | None = None, blocks: tuple = C.LL_BLOCKS) -> pd.DataFrame:
-    """B9 redone (Manu, 2026-10-19) with NO overlapping weeks. For a block length L, the block B0 = weeks t−L+1 … t and the
+    """B9 redone (review of 2026-10-19) with NO overlapping weeks. For a block length L, the block B0 = weeks t−L+1 … t and the
     block B1 = weeks t+1 … t+L share no week. On each block: the pair's correlation (over the block's L weeks), the pair's own
     realised vol (the average of the two legs' stdev over the block, annualised), and the VIX change (log VIX at the block's
     end minus at its start). Then, for every pair, both directions:
@@ -403,7 +403,7 @@ def lead_lag_verdicts(ll: pd.DataFrame) -> pd.DataFrame:
 
 
 def regime_weekly(r: pd.DataFrame) -> pd.DataFrame:
-    """B8 (Manu): the components behind the regime averages — week by week, for every pair: its 13-week correlation, its own
+    """B8 (review of 2026-10-19): the components behind the regime averages — week by week, for every pair: its 13-week correlation, its own
     vol (the average of the two legs' 13-week vol), and which fifth of its own vol that week falls in (Q1 calm … Q5 wild).
     Wide: 'a|b' (corr), 'v_a|b' (own vol), 'q_a|b' (the fifth)."""
     pcs = _pair_corrs(r); v = rolling_vol(r)

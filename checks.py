@@ -19,6 +19,7 @@ Regression checks.   python checks.py   -> exit 0 = all pass
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 
@@ -244,7 +245,7 @@ def main() -> int:
     gq_, gpath_, gper_ = histcorr.gold_when_decoupled(rw, corrbreak.episodes(corrbreak.series(rw)))
     check("G gold_when_decoupled: five G-quintiles per gold pair with the weeks summing to the pair's weeks; |corr| >= |mean corr| in every cell", all(int(gq_[gq_["pair"] == p]["weeks"].sum()) == int(PCg[p].notna().sum()) for p in set(gq_["pair"])) and (gq_["mean_abs_corr"] >= gq_["mean_corr"].abs() - 1e-12).all())
 
-    print("H. Manu's review, 2026-10-19")
+    print("H. the review of 2026-10-19")
     # H1. the around-flip robustness columns: the median is the median over the same flips; ex-year drops exactly that year's flips
     afr = sigcorr.around_flip(st, rw, refs=["N100"]); sellf = afr[afr["event"] == "flip to SELL"].set_index("weeks_from_flip")
     sN = st["N100"].reindex(rw.index); fl_ = rw.index[((sN == -1) & (sN.shift(1) == 1)).fillna(False)]
@@ -329,6 +330,12 @@ def main() -> int:
         hits = [str(p.relative_to(C.ROOT)) for p in C.ROOT.rglob("*") if p.is_file() and p.suffix in (".py", ".md", ".txt", ".json", ".csv", ".html", ".example") and ".git" not in p.parts and pw in p.read_text(encoding="utf-8", errors="ignore")]
         check("D password appears in no other file", not hits, ", ".join(hits))
     check("D .gitignore ignores .env", ".env" in (C.ROOT / ".gitignore").read_text().split())
+    names = next((l.split("=", 1)[1].strip() for l in env.read_text().splitlines() if l.startswith("WM_REDACT_NAMES=")), "") if env.exists() else ""
+    names = [n.strip() for n in names.split(",") if n.strip()]
+    if names:                                                  # no person's name anywhere in the code, docs, tables or reports (the list itself lives only in .env)
+        pat = re.compile(r"\b(" + "|".join(re.escape(n) for n in names) + r")\b", re.I)
+        hits = sorted({str(p.relative_to(C.ROOT)) for p in C.ROOT.rglob("*") if p.is_file() and p.suffix in (".py", ".md", ".txt", ".json", ".csv", ".html", ".example") and ".git" not in p.parts and p.name != ".env" and pat.search(p.read_text(encoding="utf-8", errors="ignore"))})
+        check("D no person's name in any file (list in .env: WM_REDACT_NAMES)", not hits, ", ".join(hits))
     if (C.ROOT / ".git").exists():
         check("D .env not tracked", ".env" not in subprocess.run(["git", "ls-files"], cwd=C.ROOT, capture_output=True, text=True).stdout.split())
     rep = C.REPORT_HTML
@@ -343,7 +350,7 @@ def main() -> int:
     check("D reading guide exists with its three parts and no failed chart", gd.exists() and all(s in gd.read_text(encoding="utf-8") for s in ("Part A", "Part B", "Part C", "Reading it for each combination")) and "failed:" not in gd.read_text(encoding="utf-8"))
     gtxt = gd.read_text(encoding="utf-8") if gd.exists() else ""
     check("D reading guide reads every G study pair by pair (around flips, breadth, lead, jumps, quintiles, >0.90, breaks, replacement)", gtxt.count("Reading it for each pair") >= 6 and all(f"fig_{n}" in gtxt for n in ("1_corr_around_flip_pairs", "1_corr_by_breadth", "2_corr_quintiles_pairs", "5_vol_corr_lead", "5_vol_corr_lead_pairs", "5_together", "5_together_pairs", "5_corr_rise_paths", "5_corr_rise_paths_own", "0_gold_when_decoupled", "5_corr_by_regime_more")))
-    check("D reading guide carries the 2026-10-19 additions (gold scatter / gap / after-break, state distribution, VIX vs flip, regime components, non-overlapping lead/lag, ratio) and checks Manu's inferences", all(f"fig_{n}" in gtxt for n in ("0_gold_vs_group", "0_gold_gap_reversion", "0_gold_after_break", "5_vol_state_box", "5_vix_flip_leadlag", "5_regime_scatter", "5_regime_timeline", "5_lead_lag_blocks", "2_ratio_by_corr", "2_ratio_by_state")) and "Inference → what the non-overlapping test says" in gtxt and "B10b" in gtxt)
+    check("D reading guide carries the 2026-10-19 additions (gold scatter / gap / after-break, state distribution, VIX vs flip, regime components, non-overlapping lead/lag, ratio) and checks the review's inferences", all(f"fig_{n}" in gtxt for n in ("0_gold_vs_group", "0_gold_gap_reversion", "0_gold_after_break", "5_vol_state_box", "5_vix_flip_leadlag", "5_regime_scatter", "5_regime_timeline", "5_lead_lag_blocks", "2_ratio_by_corr", "2_ratio_by_state")) and "Inference → what the non-overlapping test says" in gtxt and "B10b" in gtxt)
 
     print(f"\n{len(P)} passed, {len(F)} failed")
     if data.is_synthetic():

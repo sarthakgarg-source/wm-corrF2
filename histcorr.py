@@ -107,7 +107,7 @@ def same_quarter(r: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     return long, piv
 
 
-# ------------------------------------------------- the ratio study (Manu, 2026-10-19) --
+# ------------------------------------------------- the ratio study (review of 2026-10-19) --
 def ratio_study(r: pd.DataFrame, st: pd.DataFrame, w: int = C.HIST_WINDOW, back: int = C.RATIO_BACK, fwd: int = C.RATIO_FWD) -> tuple[pd.DataFrame, pd.DataFrame]:
     """One number per pair instead of two returns: the RATIO first leg ÷ second leg (its log change = the first leg's return
     minus the second's). For every pair and week t: the ratio's change over the last `back` weeks (t−back+1 … t, 'actual') and
@@ -296,7 +296,7 @@ def _fit(x: pd.Series, y: pd.Series, lags: int = C.HAC_LAGS) -> dict:
 
 
 def gold_vs_group(r: pd.DataFrame, w: int = C.HIST_WINDOW) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """B2 (Manu): is there a relationship between the index-pair chart and the gold-vs-index chart? Week by week, the group
+    """B2 (review of 2026-10-19): is there a relationship between the index-pair chart and the gold-vs-index chart? Week by week, the group
     correlation G against each gold pair's 13-week correlation and against the SC100×Gold − N100×Gold gap. Returns the weekly
     points (for the scatter), a fit table (a straight line per y, with Pearson / Spearman / R² / Newey-West t on the slope,
     and a quadratic's R² as the 'is there a better model' check) and the binned means (deciles of G → the average y)."""
@@ -327,7 +327,7 @@ def gold_vs_group(r: pd.DataFrame, w: int = C.HIST_WINDOW) -> tuple[pd.DataFrame
 
 
 def gap_reversion(r: pd.DataFrame, w: int = C.HIST_WINDOW, sd_k: float = C.GAP_SD, fwd: tuple = C.GAP_FWD) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """B2 (Manu): the SC100×Gold − N100×Gold gap looks mean-reverting — is it, and can it be used? (a) The gap's statistics:
+    """B2 (review of 2026-10-19): the SC100×Gold − N100×Gold gap looks mean-reverting — is it, and can it be used? (a) The gap's statistics:
     mean, sd, autocorrelation at 1/4/13 weeks, AR(1) coefficient and half-life, ADF p-value — with the caveat that a 13-week
     rolling correlation reverts by construction as the window rolls off. (b) What followed an extreme gap (beyond ±sd_k sd of
     its own full-sample sd, counted once per run): the gap's change over the next 4 / 13 weeks and how often it narrowed, and
@@ -370,7 +370,7 @@ def gap_reversion(r: pd.DataFrame, w: int = C.HIST_WINDOW, sd_k: float = C.GAP_S
 
 
 def gold_after_break(r: pd.DataFrame, cep: pd.DataFrame, w: int = C.HIST_WINDOW, after: int = C.GOLD_AFTER_BREAK) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """B2 (Manu): after the index correlation structure breaks, how long does a gold pair's correlation stay positive?
+    """B2 (review of 2026-10-19): after the index correlation structure breaks, how long does a gold pair's correlation stay positive?
     For every decorrelation episode and gold pair: the pair's 13-week correlation from the episode's first week (k = 0) to
     k = `after`; per episode the correlation at k = 0, the first week it was ≤ 0, the number of positive weeks in the first
     `after`, the longest positive run and the peak. Returns the per-episode paths (long), the averaged path per pair, and the

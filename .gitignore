@@ -7,5 +7,13 @@ __pycache__/
 .ipynb_checkpoints/
 # local tool state
 .claude/settings.local.json
-# data/ and outputs/ are committed (real-data run). Synthetic demo files and anything
-# built from them must never be committed as results - check outputs/tables/meta.json first.
+# data copies and generated outputs - the real data files are copied in locally (SETUP.md §2);
+# the synthetic demo files and anything built from them must never be committed as results
+data/*.csv
+outputs/
+# data copies and generated outputs - real data files are copied in locally (SETUP.md);
+# synthetic demo files and anything built from them must never be committed as results
+data/*.csv
+outputs/
+data/*.csv
+outputs/

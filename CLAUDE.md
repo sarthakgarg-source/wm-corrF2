@@ -12,3 +12,4 @@ Study I. Read README.md, GLOSSARY.md, LOGIC.md. `python run_all.py` → `python 
 - Lead/lag claims use `vol.lead_lag_blocks` (X on t−L+1 … t, Y on t+1 … t+L — no shared week; NW t and the non-overlapping sub-sample both required). `vol_corr_lead*` (overlapping 13-week changes) is kept for reference only; never read a lead off it.
 - Hit rates are computed on the weeks that have a forward return (`.dropna()` before `> 0`), never on the bucket's full week count.
 - Forward returns in the quintile charts are `C.QUINT_FWD` (4) weeks; the 13-week columns stay in the tables. The ratio study (`histcorr.ratio_study`) is the pair-level "who wins" test — correlation and signal cuts, past-4-week sign, next 4 weeks.
+- No person's name anywhere — not in code comments, docstrings, chart text, docs or the change log (write 'the review of <date>', 'the desk', 'as agreed'). `WM_REDACT_NAMES` in `.env` drives the hygiene check; the list itself never goes into a tracked file.

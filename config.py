@@ -64,7 +64,7 @@ FLIP_EXCLUDE_YEAR = 2020         # the around-flip study is repeated without the
 # ------------------------------------------ 2. correlation vs returns --
 HIST_WINDOW = 13                 # trailing-quarter correlation and trailing-quarter return
 FWD_WINDOW = 13                  # the following quarter (kept in the tables)
-QUINT_FWD = 4                    # weeks: the forward return the quintile chart shows (t+1 … t+4) — Manu, 2026-10-19: "4 weeks forward rather than 13"
+QUINT_FWD = 4                    # weeks: the forward return the quintile chart shows (t+1 … t+4) — review of 2026-10-19: "4 weeks forward rather than 13"
 N_BUCKETS = 5
 GAP_SD = 1.0                     # the SC100×Gold − N100×Gold gap counts as "extreme" beyond this many of its own sd
 GAP_FWD = (4, 13)                # weeks ahead for what followed an extreme gap

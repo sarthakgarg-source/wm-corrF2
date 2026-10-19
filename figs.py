@@ -381,7 +381,7 @@ def quintiles():
     fig.add_annotation(x=labels[-1], y=q.loc["Q5", "same_quarter_mean"], xref="x", yref="y", text=f"most-correlated weeks:<br>the market had been FALLING<br>(N100 {q.loc['Q5', 'same_quarter_mean']:+.1%} that quarter)", showarrow=True, arrowhead=2, arrowcolor=INK2, ax=-50, ay=-220, font={"size": 11, "color": INK2}, bgcolor="rgba(252,252,251,0.92)", bordercolor=GRID)
     fig.add_annotation(x=labels[-1], y=q.loc["Q5", nx], xref="x2", yref="y2", text=f"…and the {F} weeks AFTER them<br>were the best (N100 {q.loc['Q5', nx]:+.1%},<br>positive {q.loc['Q5', nh]:.0%} of the time)", showarrow=True, arrowhead=2, arrowcolor=INK2, ax=-130, ay=-60, font={"size": 11, "color": INK2}, bgcolor="rgba(252,252,251,0.92)", bordercolor=GRID)
     return _layout(fig, f"High correlation is a sell-off in progress — and the {F} weeks after it have been the best (N100 {q.loc['Q5', nx]:+.1%}, positive {q.loc['Q5', nh]:.0%} of the time; after the least-correlated weeks {q.loc['Q1', nx]:+.1%})", 560,
-                   f"Left: what was happening while correlation sat at that level (the correlation and the return are measured on the same weeks). Right: what came over the next {F} weeks — the horizon Manu asked for; the next-quarter (13-week) numbers stay in the table. Hover gives the number of weeks, the share positive and the median.", unified=False,
+                   f"Left: what was happening while correlation sat at that level (the correlation and the return are measured on the same weeks). Right: what came over the next {F} weeks — the horizon asked for in the 2026-10-19 review; the next-quarter (13-week) numbers stay in the table. Hover gives the number of weeks, the share positive and the median.", unified=False,
                    subtitle=f"All weeks sorted by the 13-week correlation among the indices into five equal groups (Q1 least coupled … Q5 most); each asset's average return over the same quarter (left) and the next {F} weeks (right)")
 
 
@@ -1016,7 +1016,7 @@ def rp_events(seller: str):
     return _layout(fig, f"Every SELL flip of {seller}: the z-score of each other asset against {seller} from {C.RP_PATH_WEEKS} weeks before to {C.RP_PATH_WEEKS} after (+ = that asset ahead of {seller})", 300 * rows + 130, unified=False, legend_y=-0.03)
 
 
-# ============================================================ Manu's review, 2026-10-19 ==
+# ============================================================ the review of 2026-10-19 ==
 def gold_vs_group():
     """B2: is there a relationship between how coupled the indices are (G) and gold's correlation with each index? A scatter, a straight line, and the decile means."""
     wk = _csv("0_gold_vs_group_weekly", index_col=0, parse_dates=True); ft = _csv("0_gold_vs_group_fit", index_col=0); bn = _csv("0_gold_vs_group_bins")
