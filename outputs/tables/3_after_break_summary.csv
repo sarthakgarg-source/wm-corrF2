@@ -1,0 +1,5 @@
+direction,weeks_ahead,n,breaker,rest_of_group,breaker_minus_rest,share_breaker_ahead,gold
+down-break (underperforming),4,10,0.007659,0.009433,-0.001774,0.400000,0.044909
+down-break (underperforming),13,9,0.031939,0.026763,0.005176,0.666667,0.064368
+up-break (outperforming),4,20,0.007883,0.007129,0.000754,0.600000,0.016092
+up-break (outperforming),13,20,-0.019819,-0.008426,-0.011393,0.450000,0.047666

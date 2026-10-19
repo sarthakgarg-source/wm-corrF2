@@ -1,0 +1,5 @@
+asset,sell_flips_with_vix_data,surges,share_flips_with_surge_before,share_flips_with_surge_in_week,share_flips_with_surge_after,median_weeks_surge_before_flip,median_weeks_surge_after_flip,mean_vix_change_4w_before_flip,mean_vix_change_4w_after_flip,median_vix_change_4w_before_flip,share_surges_already_in_SELL,share_surges_with_flip_before,share_surges_followed_by_flip,median_weeks_surge_to_flip
+N100,13,23,0.384615,0.384615,0.153846,4.000000,2.000000,0.175261,0.136026,0.212303,0.608696,0.304348,0.217391,4.000000
+MC100,14,23,0.285714,0.214286,0.428571,4.500000,1.500000,0.147689,0.111448,0.183955,0.608696,0.391304,0.173913,4.500000
+SC100,13,23,0.461538,0.230769,0.384615,4.500000,2.000000,0.185540,0.167146,0.189485,0.565217,0.391304,0.260870,4.500000
+Micro250,5,23,0.000000,0.200000,0.200000,,7.000000,0.136161,-0.096855,0.212303,0.833333,0.086957,0.000000,

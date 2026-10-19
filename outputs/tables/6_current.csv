@@ -1,0 +1,11 @@
+pair,date,z_now,z_4w_ago,z_13w_ago,reading
+N100|MC100,2026-08-28,-1.761344,-1.498781,-3.257838,MC100 ahead of N100 by 1.8 sd
+N100|SC100,2026-08-28,-2.018984,-1.708457,-1.611041,SC100 ahead of N100 by 2.0 sd — a large deviation
+N100|Micro250,2026-08-28,-1.887810,-1.458120,-1.520621,Micro250 ahead of N100 by 1.9 sd
+N100|GoldMCX,2026-08-28,-0.836976,-0.249047,-1.257013,inside its normal range
+MC100|SC100,2026-08-28,-1.556072,-0.976861,0.568546,SC100 ahead of MC100 by 1.6 sd
+MC100|Micro250,2026-08-28,-1.451184,-0.798493,0.180754,Micro250 ahead of MC100 by 1.5 sd
+MC100|GoldMCX,2026-08-28,-0.317925,0.158156,-0.846025,inside its normal range
+SC100|Micro250,2026-08-28,-1.053506,-0.398634,-0.679867,Micro250 ahead of SC100 by 1.1 sd
+SC100|GoldMCX,2026-08-28,0.096695,0.324936,-0.810821,inside its normal range
+Micro250|GoldMCX,2026-08-28,0.225735,0.342889,-0.713804,inside its normal range

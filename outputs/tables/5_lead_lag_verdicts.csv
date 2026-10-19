@@ -1,0 +1,21 @@
+pair,block_weeks,corr_leads_own_vol,corr_leads_own_vol_t,own_vol_leads_corr,own_vol_leads_corr_t,own_vol_n,own_vol_verdict,corr_leads_VIX,corr_leads_VIX_t,VIX_leads_corr,VIX_leads_corr_t,VIX_n,VIX_verdict
+MC100|GoldMCX,4,0.094435,1.624312,0.026254,0.429693,545,neither is reliable,-0.119775,-2.906076,-0.033829,-0.636270,496,correlation moves first
+MC100|GoldMCX,13,0.106207,1.178143,-0.183347,-2.226402,518,own vol moves first,0.272226,3.516133,-0.105432,-0.987149,469,correlation moves first
+MC100|Micro250,4,-0.084776,-1.442911,-0.158208,-1.505567,230,neither is reliable,-0.089509,-1.532944,-0.061583,-1.062263,181,neither is reliable
+MC100|Micro250,13,-0.247898,-2.386707,-0.401046,-3.245260,203,neither is reliable,0.073864,0.424995,0.001097,0.008590,154,neither is reliable
+MC100|SC100,4,-0.164463,-2.503091,-0.194886,-3.964443,545,both directions (feedback),0.002235,0.052483,-0.058241,-1.619866,496,neither is reliable
+MC100|SC100,13,-0.392911,-3.951660,-0.238884,-2.929478,518,both directions (feedback),-0.201205,-1.692921,-0.060522,-0.763843,469,neither is reliable
+Micro250|GoldMCX,4,0.095420,1.042616,0.125128,1.439139,230,neither is reliable,-0.122539,-1.751287,0.055907,0.748356,181,neither is reliable
+Micro250|GoldMCX,13,0.157538,0.985135,0.079932,0.571253,203,neither is reliable,0.097679,0.631172,-0.116861,-1.105503,154,neither is reliable
+N100|GoldMCX,4,0.116930,1.901188,0.062516,1.082361,545,neither is reliable,-0.035200,-0.775742,-0.018816,-0.352485,496,neither is reliable
+N100|GoldMCX,13,0.051066,0.689138,-0.240818,-2.671932,518,own vol moves first,0.155891,2.116431,-0.206149,-1.944617,469,correlation moves first
+N100|MC100,4,-0.094467,-1.330394,-0.191468,-3.396019,545,own vol moves first,0.007700,0.165361,0.040583,1.020559,496,neither is reliable
+N100|MC100,13,-0.364424,-3.249889,-0.160188,-2.614609,518,correlation moves first,-0.138054,-1.279045,0.059960,0.769239,469,neither is reliable
+N100|Micro250,4,-0.096961,-2.010986,-0.217344,-1.999848,230,correlation moves first,-0.057916,-0.850542,-0.120314,-1.821864,181,neither is reliable
+N100|Micro250,13,-0.350598,-3.659544,-0.370030,-3.042616,203,neither is reliable,-0.173342,-1.315349,-0.056388,-0.364767,154,neither is reliable
+N100|SC100,4,-0.136444,-2.118910,-0.182516,-3.791307,545,both directions (feedback),0.028405,0.630708,0.003389,0.085423,496,neither is reliable
+N100|SC100,13,-0.312958,-2.567891,-0.080459,-1.078950,518,correlation moves first,-0.175104,-1.387865,0.055159,0.643849,469,neither is reliable
+SC100|GoldMCX,4,0.136304,2.435333,-0.028740,-0.494846,545,correlation moves first,-0.071347,-1.647069,0.002780,0.047062,496,neither is reliable
+SC100|GoldMCX,13,0.179019,1.405186,-0.104766,-1.208003,518,neither is reliable,0.268297,2.428136,-0.088396,-0.900411,469,correlation moves first
+SC100|Micro250,4,-0.152901,-2.915855,-0.158910,-1.621444,230,correlation moves first,-0.073418,-1.015774,0.012925,0.248011,181,neither is reliable
+SC100|Micro250,13,-0.440840,-3.919302,-0.443487,-3.897511,203,neither is reliable,-0.146114,-1.153427,-0.065519,-0.386711,154,neither is reliable

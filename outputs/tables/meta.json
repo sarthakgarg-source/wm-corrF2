@@ -1,0 +1,35 @@
+{
+  "synthetic": false,
+  "synthetic_files": [],
+  "start": "2016-01-01",
+  "last_session": "2026-08-28",
+  "assets": [
+    "N100",
+    "MC100",
+    "SC100",
+    "Micro250",
+    "GoldMCX"
+  ],
+  "run_at": "2026-10-19T15:35:07",
+  "vol_corr_level": {
+    "level_corr": 0.4461423503377643,
+    "level_spearman": 0.5826726616769183,
+    "vix_level_corr": 0.2816179300324325,
+    "vix_level_spearman": 0.3331270666207492,
+    "vix_vs_realised_corr": 0.7237156950178053
+  },
+  "n_vix_surges": 23,
+  "n_corr_rises": 8,
+  "vix_last": "2025-09-15",
+  "sensitivity_episodes": {
+    "w13 z-1.5": 10,
+    "w13 z-1.0": 10,
+    "w26 z-1.5": 5,
+    "w26 z-1.0": 5
+  },
+  "n_pairs": 10,
+  "n_trades": 83,
+  "n_sell_flips": 60,
+  "cash_present": true,
+  "elapsed_s": 5.2
+}

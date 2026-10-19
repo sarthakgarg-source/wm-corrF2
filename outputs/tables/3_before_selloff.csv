@@ -1,0 +1,6 @@
+selloff,N100_peak,depth,group_min_z_before_peak,group_broke_before_peak,N100_broke_weeks_before_peak,MC100_broke_weeks_before_peak,SC100_broke_weeks_before_peak,Micro250_broke_weeks_before_peak,first_to_break
+E2 2016-09,2016-09-09,-0.100927,,False,,,,,none
+E3 2018-08,2018-08-31,-0.148112,-0.208262,False,,,,,none
+E4 2020-01,2020-01-17,-0.339259,-2.467598,True,2.000000,2.000000,2.000000,,N100
+E5 2021-10,2021-10-15,-0.170042,-3.243121,True,10.000000,10.000000,10.000000,,N100
+E6 2024-09,2024-09-27,-0.175183,-0.090024,False,,,,,none

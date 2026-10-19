@@ -1,0 +1,6 @@
+asset,episodes,median_lead_peak_weeks,first_share_peak,avg_rank_peak,n_peak,median_lead_signal_sell_weeks,first_share_signal_sell,avg_rank_signal_sell,n_signal_sell,median_lead_cross_10pct_weeks,first_share_cross_10pct,avg_rank_cross_10pct,n_cross_10pct,median_lead_recover_buy_weeks,first_share_recover_buy,avg_rank_recover_buy,n_recover_buy,median_own_fall,verdict
+N100,6,0.000000,0.666667,1.333333,6,0.000000,0.666667,1.200000,5,0.000000,0.166667,2.666667,6,0.000000,0.666667,1.833333,6,-0.159077,signal flips to SELL first; turns back to BUY first; 
+MC100,6,0.000000,0.500000,1.833333,6,1.000000,0.333333,1.800000,5,-0.500000,0.500000,1.500000,6,0.000000,0.333333,2.000000,6,-0.193886,
+SC100,6,0.500000,0.500000,1.833333,6,1.000000,0.500000,1.833333,6,-2.000000,0.833333,1.333333,6,0.500000,0.333333,2.000000,6,-0.248432,crosses -10% first; 
+Micro250,2,12.000000,0.000000,3.500000,2,24.000000,0.000000,4.000000,1,4.500000,0.000000,3.000000,2,3.000000,0.000000,2.500000,2,-0.219509,
+GoldMCX,6,7.500000,0.166667,3.833333,6,9.000000,0.166667,3.000000,3,-2.000000,0.000000,3.000000,1,7.500000,0.166667,3.000000,4,-0.012733,

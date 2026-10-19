@@ -1,0 +1,161 @@
+pair,block_weeks,direction,measure,kind,n,pearson,spearman,nw_t,pearson_nonoverlap,n_nonoverlap
+N100|MC100,4,correlation → own vol,own vol,level,549,0.087074,0.166195,1.834346,0.077727,138
+N100|MC100,4,own vol → correlation,own vol,level,549,0.041981,0.106241,0.885134,0.038489,138
+N100|MC100,4,correlation → own vol,own vol,change,545,-0.094467,-0.146883,-1.330394,-0.135114,137
+N100|MC100,4,own vol → correlation,own vol,change,545,-0.191468,-0.185906,-3.396019,-0.230974,137
+N100|MC100,4,correlation → VIX,VIX,level,500,-0.092828,-0.119843,-2.620950,-0.061773,125
+N100|MC100,4,VIX → correlation,VIX,level,503,0.089452,0.122947,2.290425,0.097790,126
+N100|MC100,4,correlation → VIX,VIX,change,496,0.007700,-0.029523,0.165361,0.049285,124
+N100|MC100,4,VIX → correlation,VIX,change,503,0.040583,0.025263,1.020559,0.019018,126
+N100|SC100,4,correlation → own vol,own vol,level,549,0.086103,0.137279,1.580976,0.044197,138
+N100|SC100,4,own vol → correlation,own vol,level,549,0.068068,0.135045,1.443568,0.140408,138
+N100|SC100,4,correlation → own vol,own vol,change,545,-0.136444,-0.140795,-2.118910,-0.217301,137
+N100|SC100,4,own vol → correlation,own vol,change,545,-0.182516,-0.184807,-3.791307,-0.084580,137
+N100|SC100,4,correlation → VIX,VIX,level,500,-0.054167,-0.092467,-1.388986,-0.037037,125
+N100|SC100,4,VIX → correlation,VIX,level,503,0.042476,0.056139,1.113882,0.078456,126
+N100|SC100,4,correlation → VIX,VIX,change,496,0.028405,0.000841,0.630708,0.013444,124
+N100|SC100,4,VIX → correlation,VIX,change,503,0.003389,0.013301,0.085423,-0.024153,126
+N100|Micro250,4,correlation → own vol,own vol,level,234,0.253722,0.227207,4.161736,0.151000,59
+N100|Micro250,4,own vol → correlation,own vol,level,234,0.092097,0.082922,1.159173,0.022103,59
+N100|Micro250,4,correlation → own vol,own vol,change,230,-0.096961,-0.120210,-2.010986,-0.143612,58
+N100|Micro250,4,own vol → correlation,own vol,change,230,-0.217344,-0.324472,-1.999848,-0.235639,58
+N100|Micro250,4,correlation → VIX,VIX,level,185,-0.063257,-0.102581,-0.946530,-0.144735,47
+N100|Micro250,4,VIX → correlation,VIX,level,193,-0.012627,-0.079864,-0.185196,-0.080129,49
+N100|Micro250,4,correlation → VIX,VIX,change,181,-0.057916,-0.066555,-0.850542,-0.107997,46
+N100|Micro250,4,VIX → correlation,VIX,change,189,-0.120314,-0.164866,-1.821864,-0.235483,48
+N100|GoldMCX,4,correlation → own vol,own vol,level,549,0.056582,0.041911,0.862889,-0.003416,138
+N100|GoldMCX,4,own vol → correlation,own vol,level,549,-0.034761,-0.040444,-0.507704,-0.044431,138
+N100|GoldMCX,4,correlation → own vol,own vol,change,545,0.116930,0.122031,1.901188,0.133327,137
+N100|GoldMCX,4,own vol → correlation,own vol,change,545,0.062516,0.043906,1.082361,0.103887,137
+N100|GoldMCX,4,correlation → VIX,VIX,level,500,-0.004903,0.006744,-0.080233,-0.001248,125
+N100|GoldMCX,4,VIX → correlation,VIX,level,503,0.013905,-0.016717,0.225319,0.015775,126
+N100|GoldMCX,4,correlation → VIX,VIX,change,496,-0.035200,-0.079311,-0.775742,-0.093536,124
+N100|GoldMCX,4,VIX → correlation,VIX,change,503,-0.018816,-0.015835,-0.352485,0.003015,126
+MC100|SC100,4,correlation → own vol,own vol,level,549,0.084451,0.125209,1.643495,0.070729,138
+MC100|SC100,4,own vol → correlation,own vol,level,549,0.099661,0.094728,2.374613,0.156089,138
+MC100|SC100,4,correlation → own vol,own vol,change,545,-0.164463,-0.168610,-2.503091,-0.187583,137
+MC100|SC100,4,own vol → correlation,own vol,change,545,-0.194886,-0.271596,-3.964443,-0.094301,137
+MC100|SC100,4,correlation → VIX,VIX,level,500,-0.046256,-0.081790,-1.269483,0.020582,125
+MC100|SC100,4,VIX → correlation,VIX,level,503,-0.007604,-0.010987,-0.193521,-0.004247,126
+MC100|SC100,4,correlation → VIX,VIX,change,496,0.002235,0.007434,0.052483,0.069452,124
+MC100|SC100,4,VIX → correlation,VIX,change,503,-0.058241,-0.084305,-1.619866,-0.122981,126
+MC100|Micro250,4,correlation → own vol,own vol,level,234,0.223791,0.217235,3.785146,0.100731,59
+MC100|Micro250,4,own vol → correlation,own vol,level,234,0.140474,0.133043,1.762342,0.155355,59
+MC100|Micro250,4,correlation → own vol,own vol,change,230,-0.084776,-0.143528,-1.442911,-0.153651,58
+MC100|Micro250,4,own vol → correlation,own vol,change,230,-0.158208,-0.303318,-1.505567,-0.129157,58
+MC100|Micro250,4,correlation → VIX,VIX,level,185,-0.072355,-0.076891,-1.253154,-0.145993,47
+MC100|Micro250,4,VIX → correlation,VIX,level,193,-0.016334,-0.079650,-0.261610,0.064509,49
+MC100|Micro250,4,correlation → VIX,VIX,change,181,-0.089509,-0.075468,-1.532944,-0.166059,46
+MC100|Micro250,4,VIX → correlation,VIX,change,189,-0.061583,-0.138495,-1.062263,0.023134,48
+MC100|GoldMCX,4,correlation → own vol,own vol,level,549,0.055576,0.041171,0.934031,0.002649,138
+MC100|GoldMCX,4,own vol → correlation,own vol,level,549,-0.040533,-0.047827,-0.701911,-0.059880,138
+MC100|GoldMCX,4,correlation → own vol,own vol,change,545,0.094435,0.076942,1.624312,0.040424,137
+MC100|GoldMCX,4,own vol → correlation,own vol,change,545,0.026254,0.009520,0.429693,0.005929,137
+MC100|GoldMCX,4,correlation → VIX,VIX,level,500,-0.045474,-0.061863,-0.823318,0.004288,125
+MC100|GoldMCX,4,VIX → correlation,VIX,level,503,-0.035984,-0.054846,-0.695744,-0.039948,126
+MC100|GoldMCX,4,correlation → VIX,VIX,change,496,-0.119775,-0.161999,-2.906076,-0.121671,124
+MC100|GoldMCX,4,VIX → correlation,VIX,change,503,-0.033829,-0.020775,-0.636270,-0.053075,126
+SC100|Micro250,4,correlation → own vol,own vol,level,234,0.111551,0.114186,2.381475,0.121554,59
+SC100|Micro250,4,own vol → correlation,own vol,level,234,0.089206,0.162780,1.164751,0.070136,59
+SC100|Micro250,4,correlation → own vol,own vol,change,230,-0.152901,-0.268919,-2.915855,-0.019776,58
+SC100|Micro250,4,own vol → correlation,own vol,change,230,-0.158910,-0.223982,-1.621444,-0.083234,58
+SC100|Micro250,4,correlation → VIX,VIX,level,185,-0.027354,-0.109814,-0.438305,-0.137773,47
+SC100|Micro250,4,VIX → correlation,VIX,level,193,0.068513,0.086624,1.188779,0.116366,49
+SC100|Micro250,4,correlation → VIX,VIX,change,181,-0.073418,-0.187928,-1.015774,-0.176190,46
+SC100|Micro250,4,VIX → correlation,VIX,change,189,0.012925,0.014558,0.248011,0.088817,48
+SC100|GoldMCX,4,correlation → own vol,own vol,level,549,0.077289,0.059298,1.372544,0.003022,138
+SC100|GoldMCX,4,own vol → correlation,own vol,level,549,-0.103699,-0.124180,-1.952856,-0.121805,138
+SC100|GoldMCX,4,correlation → own vol,own vol,change,545,0.136304,0.131851,2.435333,0.083028,137
+SC100|GoldMCX,4,own vol → correlation,own vol,change,545,-0.028740,-0.041696,-0.494846,0.003013,137
+SC100|GoldMCX,4,correlation → VIX,VIX,level,500,-0.019247,-0.031454,-0.367948,0.028180,125
+SC100|GoldMCX,4,VIX → correlation,VIX,level,503,0.003067,0.003220,0.060008,0.017073,126
+SC100|GoldMCX,4,correlation → VIX,VIX,change,496,-0.071347,-0.109386,-1.647069,-0.038795,124
+SC100|GoldMCX,4,VIX → correlation,VIX,change,503,0.002780,0.023111,0.047062,0.030695,126
+Micro250|GoldMCX,4,correlation → own vol,own vol,level,234,0.028280,0.006567,0.298282,0.008637,59
+Micro250|GoldMCX,4,own vol → correlation,own vol,level,234,-0.026154,-0.048029,-0.322336,-0.197782,59
+Micro250|GoldMCX,4,correlation → own vol,own vol,change,230,0.095420,0.097600,1.042616,0.071406,58
+Micro250|GoldMCX,4,own vol → correlation,own vol,change,230,0.125128,0.112854,1.439139,-0.108682,58
+Micro250|GoldMCX,4,correlation → VIX,VIX,level,185,-0.050596,-0.082069,-0.603562,-0.234396,47
+Micro250|GoldMCX,4,VIX → correlation,VIX,level,193,0.036073,0.060584,0.467606,0.040097,49
+Micro250|GoldMCX,4,correlation → VIX,VIX,change,181,-0.122539,-0.149890,-1.751287,-0.332737,46
+Micro250|GoldMCX,4,VIX → correlation,VIX,change,189,0.055907,0.061357,0.748356,0.035644,48
+N100|MC100,13,correlation → own vol,own vol,level,531,-0.109765,-0.091833,-1.170317,0.062005,41
+N100|MC100,13,own vol → correlation,own vol,level,531,-0.033984,-0.048815,-0.327184,0.171659,41
+N100|MC100,13,correlation → own vol,own vol,change,518,-0.364424,-0.413433,-3.249889,-0.259807,40
+N100|MC100,13,own vol → correlation,own vol,change,518,-0.160188,-0.231398,-2.614609,0.130574,40
+N100|MC100,13,correlation → VIX,VIX,level,482,-0.230502,-0.326626,-2.322884,-0.005919,38
+N100|MC100,13,VIX → correlation,VIX,level,494,0.232715,0.246256,2.411998,0.359744,38
+N100|MC100,13,correlation → VIX,VIX,change,469,-0.138054,-0.174480,-1.279045,0.058526,37
+N100|MC100,13,VIX → correlation,VIX,change,494,0.059960,0.027923,0.769239,0.247287,38
+N100|SC100,13,correlation → own vol,own vol,level,531,-0.098713,-0.106689,-1.022550,0.087076,41
+N100|SC100,13,own vol → correlation,own vol,level,531,0.037200,0.053591,0.485183,0.113815,41
+N100|SC100,13,correlation → own vol,own vol,change,518,-0.312958,-0.329813,-2.567891,-0.179041,40
+N100|SC100,13,own vol → correlation,own vol,change,518,-0.080459,-0.122703,-1.078950,0.059125,40
+N100|SC100,13,correlation → VIX,VIX,level,482,-0.254227,-0.320581,-2.664328,-0.045032,38
+N100|SC100,13,VIX → correlation,VIX,level,494,0.200930,0.156467,1.929671,0.243407,38
+N100|SC100,13,correlation → VIX,VIX,change,469,-0.175104,-0.121401,-1.387865,0.012953,37
+N100|SC100,13,VIX → correlation,VIX,change,494,0.055159,0.061475,0.643849,0.135512,38
+N100|Micro250,13,correlation → own vol,own vol,level,216,0.040560,-0.024582,0.313932,,17
+N100|Micro250,13,own vol → correlation,own vol,level,216,0.094166,0.061005,0.520741,,17
+N100|Micro250,13,correlation → own vol,own vol,change,203,-0.350598,-0.375525,-3.659544,,16
+N100|Micro250,13,own vol → correlation,own vol,change,203,-0.370030,-0.369161,-3.042616,,16
+N100|Micro250,13,correlation → VIX,VIX,level,167,-0.434543,-0.411203,-4.025927,,13
+N100|Micro250,13,VIX → correlation,VIX,level,193,-0.003296,-0.010363,-0.021780,,15
+N100|Micro250,13,correlation → VIX,VIX,change,154,-0.173342,-0.135040,-1.315349,,12
+N100|Micro250,13,VIX → correlation,VIX,change,180,-0.056388,-0.046434,-0.364767,,14
+N100|GoldMCX,13,correlation → own vol,own vol,level,531,0.072071,0.093873,0.899232,0.131592,41
+N100|GoldMCX,13,own vol → correlation,own vol,level,531,-0.090626,0.027485,-0.897171,0.000595,41
+N100|GoldMCX,13,correlation → own vol,own vol,change,518,0.051066,0.081866,0.689138,0.163132,40
+N100|GoldMCX,13,own vol → correlation,own vol,change,518,-0.240818,-0.027163,-2.671932,-0.068089,40
+N100|GoldMCX,13,correlation → VIX,VIX,level,482,0.060363,0.091812,0.608950,0.075881,38
+N100|GoldMCX,13,VIX → correlation,VIX,level,494,-0.180437,-0.115697,-2.226757,-0.061461,38
+N100|GoldMCX,13,correlation → VIX,VIX,change,469,0.155891,0.173114,2.116431,0.188557,37
+N100|GoldMCX,13,VIX → correlation,VIX,change,494,-0.206149,-0.067704,-1.944617,-0.063225,38
+MC100|SC100,13,correlation → own vol,own vol,level,531,-0.117460,-0.167660,-0.900865,-0.000113,41
+MC100|SC100,13,own vol → correlation,own vol,level,531,0.045682,0.087170,0.451917,0.038408,41
+MC100|SC100,13,correlation → own vol,own vol,change,518,-0.392911,-0.477268,-3.951660,-0.305438,40
+MC100|SC100,13,own vol → correlation,own vol,change,518,-0.238884,-0.293988,-2.929478,-0.241300,40
+MC100|SC100,13,correlation → VIX,VIX,level,482,-0.278531,-0.322842,-2.206774,-0.135349,38
+MC100|SC100,13,VIX → correlation,VIX,level,494,0.075328,0.097626,0.803779,-0.039268,38
+MC100|SC100,13,correlation → VIX,VIX,change,469,-0.201205,-0.190730,-1.692921,-0.064280,37
+MC100|SC100,13,VIX → correlation,VIX,change,494,-0.060522,-0.023910,-0.763843,-0.161802,38
+MC100|Micro250,13,correlation → own vol,own vol,level,216,0.210471,0.128309,1.493395,,17
+MC100|Micro250,13,own vol → correlation,own vol,level,216,0.040047,0.023282,0.288497,,17
+MC100|Micro250,13,correlation → own vol,own vol,change,203,-0.247898,-0.295924,-2.386707,,16
+MC100|Micro250,13,own vol → correlation,own vol,change,203,-0.401046,-0.411010,-3.245260,,16
+MC100|Micro250,13,correlation → VIX,VIX,level,167,-0.226619,-0.228426,-1.817241,,13
+MC100|Micro250,13,VIX → correlation,VIX,level,193,0.057300,0.025603,0.437335,,15
+MC100|Micro250,13,correlation → VIX,VIX,change,154,0.073864,0.139811,0.424995,,12
+MC100|Micro250,13,VIX → correlation,VIX,change,180,0.001097,-0.009161,0.008590,,14
+MC100|GoldMCX,13,correlation → own vol,own vol,level,531,0.120647,0.114297,1.001654,0.106826,41
+MC100|GoldMCX,13,own vol → correlation,own vol,level,531,-0.079787,-0.018645,-0.966470,-0.014378,41
+MC100|GoldMCX,13,correlation → own vol,own vol,change,518,0.106207,0.108430,1.178143,0.095518,40
+MC100|GoldMCX,13,own vol → correlation,own vol,change,518,-0.183347,-0.064358,-2.226402,-0.074020,40
+MC100|GoldMCX,13,correlation → VIX,VIX,level,482,0.211143,0.202184,2.122057,0.221168,38
+MC100|GoldMCX,13,VIX → correlation,VIX,level,494,-0.134012,-0.082932,-1.760682,0.021319,38
+MC100|GoldMCX,13,correlation → VIX,VIX,change,469,0.272226,0.294875,3.516133,0.295617,37
+MC100|GoldMCX,13,VIX → correlation,VIX,change,494,-0.105432,0.006901,-0.987149,0.051631,38
+SC100|Micro250,13,correlation → own vol,own vol,level,216,0.054312,0.073678,0.274064,,17
+SC100|Micro250,13,own vol → correlation,own vol,level,216,-0.016139,0.054843,-0.098264,,17
+SC100|Micro250,13,correlation → own vol,own vol,change,203,-0.440840,-0.411603,-3.919302,,16
+SC100|Micro250,13,own vol → correlation,own vol,change,203,-0.443487,-0.456859,-3.897511,,16
+SC100|Micro250,13,correlation → VIX,VIX,level,167,-0.266545,-0.219019,-1.878783,,13
+SC100|Micro250,13,VIX → correlation,VIX,level,193,0.052287,0.064345,0.416203,,15
+SC100|Micro250,13,correlation → VIX,VIX,change,154,-0.146114,-0.078512,-1.153427,,12
+SC100|Micro250,13,VIX → correlation,VIX,change,180,-0.065519,-0.094030,-0.386711,,14
+SC100|GoldMCX,13,correlation → own vol,own vol,level,531,0.119494,0.074165,0.955160,0.068684,41
+SC100|GoldMCX,13,own vol → correlation,own vol,level,531,-0.093428,-0.050543,-1.109323,-0.060823,41
+SC100|GoldMCX,13,correlation → own vol,own vol,change,518,0.179019,0.115628,1.405186,0.118828,40
+SC100|GoldMCX,13,own vol → correlation,own vol,change,518,-0.104766,-0.015786,-1.208003,-0.046213,40
+SC100|GoldMCX,13,correlation → VIX,VIX,level,482,0.187332,0.177675,2.005849,0.206711,38
+SC100|GoldMCX,13,VIX → correlation,VIX,level,494,-0.097831,-0.056666,-1.245547,0.047737,38
+SC100|GoldMCX,13,correlation → VIX,VIX,change,469,0.268297,0.257180,2.428136,0.294727,37
+SC100|GoldMCX,13,VIX → correlation,VIX,change,494,-0.088396,0.007242,-0.900411,0.079546,38
+Micro250|GoldMCX,13,correlation → own vol,own vol,level,216,-0.197373,-0.173855,-1.243729,,17
+Micro250|GoldMCX,13,own vol → correlation,own vol,level,216,-0.062906,-0.067289,-0.453693,,17
+Micro250|GoldMCX,13,correlation → own vol,own vol,change,203,0.157538,0.189213,0.985135,,16
+Micro250|GoldMCX,13,own vol → correlation,own vol,change,203,0.079932,0.071102,0.571253,,16
+Micro250|GoldMCX,13,correlation → VIX,VIX,level,167,0.018047,0.022424,0.199949,,13
+Micro250|GoldMCX,13,VIX → correlation,VIX,level,193,0.008378,-0.033634,0.046925,,15
+Micro250|GoldMCX,13,correlation → VIX,VIX,change,154,0.097679,0.081699,0.631172,,12
+Micro250|GoldMCX,13,VIX → correlation,VIX,change,180,-0.116861,-0.063883,-1.105503,,14

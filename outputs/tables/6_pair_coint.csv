@@ -1,0 +1,11 @@
+pair,weeks,adf_p_log_ratio,eg_p_a_on_b,eg_p_b_on_a,halflife_weeks_full,halflife_weeks_vs_52w_mean,ratio_drift_per_year,verdict
+N100|MC100,557,0.974990,0.697458,0.832655,inf,26.786063,-0.038900,"no long-run level: the ratio drifts (a trend, not a spread)"
+N100|SC100,557,0.663304,0.657404,0.804146,121.738197,37.489233,-0.011037,"no long-run level: the ratio drifts (a trend, not a spread)"
+N100|Micro250,242,0.816478,0.269724,0.294619,118.710793,29.865994,-0.120436,"no long-run level: the ratio drifts (a trend, not a spread)"
+N100|GoldMCX,557,0.909280,0.770163,0.932595,292.411731,33.870618,-0.065089,"no long-run level: the ratio drifts (a trend, not a spread)"
+MC100|SC100,557,0.577775,0.522970,0.475917,98.408121,28.139136,0.027864,"no long-run level: the ratio drifts (a trend, not a spread)"
+MC100|Micro250,242,0.609949,0.617251,0.612499,37.287455,24.521844,-0.038638,"no long-run level: the ratio drifts (a trend, not a spread)"
+MC100|GoldMCX,557,0.452173,0.674682,0.844058,76.181106,36.116930,-0.026188,"no long-run level: the ratio drifts (a trend, not a spread)"
+SC100|Micro250,242,0.009033,0.000538,0.000220,24.992166,14.530219,-0.075786,pulls back to a long-run level (half-life 25 wk)
+SC100|GoldMCX,557,0.428432,0.354341,0.798075,86.162712,42.641548,-0.054052,"no long-run level: the ratio drifts (a trend, not a spread)"
+Micro250|GoldMCX,242,0.497212,0.526482,0.920588,80.578659,37.010862,-0.067203,"no long-run level: the ratio drifts (a trend, not a spread)"

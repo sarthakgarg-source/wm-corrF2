@@ -1,0 +1,2 @@
+weeks,mean,sd,min,max,autocorr_1w,autocorr_4w,autocorr_13w,autocorr_26w,ar1_phi,half_life_weeks,adf_p,share_weeks_beyond_1sd,weeks_above_zero_share
+547,0.022397,0.224248,-0.714190,0.820386,0.910919,0.626931,-0.145332,-0.097253,0.911884,7.514429,0.000002,0.274223,0.488117

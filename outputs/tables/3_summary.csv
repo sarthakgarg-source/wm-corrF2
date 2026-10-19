@@ -1,0 +1,5 @@
+asset,episodes_present,episodes_broke,share_broke,share_first,avg_rank,share_first_alone,avg_rank_deepest,share_deepest,avg_rank_drop,share_biggest_drop,avg_drop_share,median_lead_weeks,share_before_group,avg_corr_drop,share_up_breaks,median_rel_13w_return_at_break,combined_rank,verdict
+N100,10,10,1.000000,0.700000,1.500000,0.100000,2.200000,0.200000,1.100000,0.900000,0.390718,0.000000,0.100000,-0.336900,0.300000,-0.012325,1.600000,biggest fall in its own correlation; 
+MC100,10,10,1.000000,0.900000,1.100000,0.200000,2.200000,0.300000,3.200000,0.000000,0.218396,0.000000,0.300000,-0.185740,0.800000,0.041855,2.166667,earliest by date; 
+SC100,10,8,0.800000,0.400000,1.875000,0.000000,2.700000,0.200000,2.800000,0.000000,0.243547,0.000000,0.000000,-0.231720,0.875000,0.029387,2.458333,
+Micro250,5,5,1.000000,0.800000,1.200000,0.000000,1.800000,0.600000,1.800000,0.200000,0.294678,0.000000,0.200000,-0.220174,0.800000,0.020042,1.600000,deepest below its norm when the market broke; => FIRST-BREAKER on the combined score
