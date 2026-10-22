@@ -69,6 +69,7 @@ N_BUCKETS = 5
 GAP_SD = 1.0                     # the SC100×Gold − N100×Gold gap counts as "extreme" beyond this many of its own sd
 GAP_FWD = (4, 13)                # weeks ahead for what followed an extreme gap
 GOLD_AFTER_BREAK = 26            # weeks after a decorrelation episode starts over which the gold pairs' correlation is followed
+PAIR_VS_GOLD_DEFAULT = ("N100|SC100", "SC100|GoldMCX")   # the index pair and gold pair the "do they move opposite?" chart opens on (review of 2026-10-22); the menu has every combination
 RATIO_BACK = 4                   # weeks: the ratio's change over the last 4 weeks (t−3 … t)
 RATIO_FWD = 4                    # weeks: the ratio's change over the next 4 weeks (t+1 … t+4)
 

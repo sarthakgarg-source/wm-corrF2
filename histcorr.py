@@ -369,6 +369,36 @@ def gap_reversion(r: pd.DataFrame, w: int = C.HIST_WINDOW, sd_k: float = C.GAP_S
     return pd.DataFrame([st]), pd.DataFrame(rows), wk
 
 
+def index_pair_vs_gold_pair(r: pd.DataFrame, w: int = C.HIST_WINDOW) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """B2 (review of 2026-10-22): do an index pair's correlation and a gold pair's correlation move in opposite directions?
+    For every index pair × gold pair: the correlation between the two weekly series (levels: Pearson with a Newey-West t,
+    Spearman), between their 4-week and 13-week changes (weekly-stepped, and on the strictly non-overlapping sub-sample),
+    and the gold pair's average correlation in the weeks the index pair was in its loosest fifth vs its tightest fifth.
+    Plus the weekly difference series (index pair − gold pair) for each combination, with its mean and sd."""
+    PC = pair_corrs(r, w)
+    ip = [p for p in PC.columns if "Gold" not in p]; gp = [p for p in PC.columns if "Gold" in p]
+    rows, wk = [], pd.DataFrame(index=PC.index)
+    for a in ip:
+        for b in gp:
+            d = pd.DataFrame({"a": PC[a], "b": PC[b]}).dropna()
+            f = _fit(d["a"], d["b"], lags=w)
+            row = {"index_pair": a, "gold_pair": b, "weeks": int(len(d)), "pearson_levels": f["pearson"], "nw_t_levels": f["nw_t_slope"], "spearman_levels": f["spearman"]}
+            for L in (4, 13):
+                dd = pd.DataFrame({"a": PC[a].diff(L), "b": PC[b].diff(L)}).dropna(); no = dd.iloc[::L]
+                row[f"pearson_{L}w_changes"] = float(dd["a"].corr(dd["b"])) if len(dd) >= 20 else np.nan
+                row[f"pearson_{L}w_changes_nonoverlap"] = float(no["a"].corr(no["b"])) if len(no) >= 20 else np.nan
+                row[f"n_{L}w_nonoverlap"] = int(len(no))
+            if len(d) >= 5 * C.N_BUCKETS:
+                q = pd.qcut(d["a"], C.N_BUCKETS, labels=[f"Q{i + 1}" for i in range(C.N_BUCKETS)])
+                g = d.groupby(q, observed=True)["b"].mean()
+                row["gold_pair_mean_when_index_pair_loosest"] = float(g.get("Q1", np.nan)); row["gold_pair_mean_when_index_pair_tightest"] = float(g.get(f"Q{C.N_BUCKETS}", np.nan))
+            diff = PC[a] - PC[b]
+            row["diff_mean"] = float(diff.mean()); row["diff_sd"] = float(diff.std())
+            wk[f"{a} - {b}"] = diff
+            rows.append(row)
+    return pd.DataFrame(rows), wk
+
+
 def gold_after_break(r: pd.DataFrame, cep: pd.DataFrame, w: int = C.HIST_WINDOW, after: int = C.GOLD_AFTER_BREAK) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """B2 (review of 2026-10-19): after the index correlation structure breaks, how long does a gold pair's correlation stay positive?
     For every decorrelation episode and gold pair: the pair's 13-week correlation from the episode's first week (k = 0) to

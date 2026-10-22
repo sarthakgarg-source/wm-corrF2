@@ -1049,11 +1049,16 @@ def gap_reversion():
     """B2: the SC100×Gold − N100×Gold gap — does it mean-revert, and what followed its extremes?"""
     wk = _csv("0_gold_gap_weekly", index_col=0, parse_dates=True); st = _csv("0_gold_gap_stats").iloc[0]; ae = _csv("0_gold_gap_after_extreme")
     fig = make_subplots(rows=2, cols=2, specs=[[{"colspan": 2}, None], [{}, {}]], row_heights=[0.56, 0.44], vertical_spacing=0.16, horizontal_spacing=0.1,
-                        subplot_titles=(f"The gap week by week, with ±{C.GAP_SD:g} sd lines (mean {st['mean']:+.2f}, sd {st['sd']:.2f})", "Did the gap narrow afterwards?", "What Smallcap − Nifty and gold did afterwards (t+1 …)"))
+                        subplot_titles=(f"The gap week by week — y = SC100×Gold corr minus N100×Gold corr; mean {st['mean']:+.2f}, sd {st['sd']:.2f} over the whole history, so the lines sit at {st['mean'] + C.GAP_SD * st['sd']:+.2f} and {st['mean'] - C.GAP_SD * st['sd']:+.2f}", "Did the gap narrow afterwards?", "What Smallcap − Nifty and gold did afterwards (t+1 …)"))
     g = wk["gap"]
     fig.add_trace(go.Scatter(x=g.index, y=g, mode="lines", line={"color": INK, "width": 1.2}, name="gap = SC100×Gold − N100×Gold", hovertemplate="%{y:+.2f}<extra>gap</extra>"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=g.index, y=wk["upper"], mode="lines", line={"color": SELL, "width": 1, "dash": "dash"}, name=f"+{C.GAP_SD:g} sd", hoverinfo="skip"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=g.index, y=wk["lower"], mode="lines", line={"color": BUY, "width": 1, "dash": "dash"}, name=f"−{C.GAP_SD:g} sd", hoverinfo="skip"), row=1, col=1)
+    up_v, lo_v = float(wk["upper"].iloc[0]), float(wk["lower"].iloc[0])
+    x2 = [g.index[0], g.index[-1]]
+    fig.add_trace(go.Scatter(x=x2, y=[up_v] * 2, mode="lines", line={"color": SELL, "width": 1, "dash": "dash"}, name=f"+{C.GAP_SD:g} sd = {up_v:+.2f}", hovertemplate=f"+{C.GAP_SD:g} sd line: {up_v:+.3f}<extra></extra>"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=x2, y=[st["mean"]] * 2, mode="lines", line={"color": MUTED, "width": 1, "dash": "dot"}, name=f"mean = {st['mean']:+.2f}", hovertemplate=f"mean: {st['mean']:+.3f}<extra></extra>"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=x2, y=[lo_v] * 2, mode="lines", line={"color": BUY, "width": 1, "dash": "dash"}, name=f"−{C.GAP_SD:g} sd = {lo_v:+.2f}", hovertemplate=f"−{C.GAP_SD:g} sd line: {lo_v:+.3f}<extra></extra>"), row=1, col=1)
+    for yv, txt, col_ in ((up_v, f"+{C.GAP_SD:g} sd = {up_v:+.2f}", SELL), (st["mean"], f"mean {st['mean']:+.2f}", INK2), (lo_v, f"−{C.GAP_SD:g} sd = {lo_v:+.2f}", BUY)):
+        fig.add_annotation(x=g.index[-1], y=yv, xref="x", yref="y", text=txt, showarrow=False, xanchor="left", xshift=4, font={"size": 10.5, "color": col_})
     up = (g > wk["upper"]).fillna(False); dn = (g < wk["lower"]).fillna(False)
     su = g.index[up & ~up.shift(1, fill_value=False)]; sd_ = g.index[dn & ~dn.shift(1, fill_value=False)]
     fig.add_trace(go.Scatter(x=su, y=g.loc[su], mode="markers", marker={"color": SELL, "size": 8, "symbol": "triangle-down"}, name=f"first week above +{C.GAP_SD:g} sd", hovertemplate="%{x|%Y-%m-%d}: %{y:+.2f}<extra>above</extra>"), row=1, col=1)
@@ -1072,8 +1077,8 @@ def gap_reversion():
             fig.add_trace(go.Bar(x=x, y=s["gold_mean"], marker_color=COL["GoldMCX"], opacity=op, name=f"gold over the next {h} wk", customdata=np.c_[s["gold_hit"], s["gold_all_weeks_mean"], s["events"]], text=[f"{v:+.1%}" for v in s["gold_mean"]], textposition="outside", textfont={"size": 9}, hovertemplate="%{x}: %{y:+.1%} (positive %{customdata[0]:.0%} of %{customdata[2]} events; all weeks %{customdata[1]:+.1%})<extra>" + f"gold {h} wk</extra>"), row=2, col=2)
     n_up = int(ae[(ae["extreme"].str.contains("above")) & (ae["horizon_weeks"] == C.GAP_FWD[0])]["events"].iloc[0]); n_dn = int(ae[(ae["extreme"].str.contains("below")) & (ae["horizon_weeks"] == C.GAP_FWD[0])]["events"].iloc[0])
     fig.layout.annotations[1].text = f"Did the gap narrow afterwards? ({n_up} runs above, {n_dn} below)"; fig.layout.annotations[2].text = f"What Smallcap − Nifty and gold did afterwards (t+1 …; same {n_up} / {n_dn} runs)"
-    fig.update_yaxes(range=[-0.9, 0.9], row=1, col=1); fig.update_yaxes(tickformat=".0%", range=[0, 1.15], row=2, col=1); fig.update_yaxes(tickformat=".0%", row=2, col=2)
-    fig.update_layout(barmode="group")
+    fig.update_yaxes(range=[-0.9, 0.9], title_text="gap (correlation units)", dtick=0.25, row=1, col=1); fig.update_yaxes(tickformat=".0%", range=[0, 1.15], row=2, col=1); fig.update_yaxes(tickformat=".0%", row=2, col=2)
+    fig.update_layout(barmode="group", margin={"r": 110})
     a4 = ae[(ae["horizon_weeks"] == C.GAP_FWD[0])]
     nar = a4["share_gap_narrowed"].mean()
     rel = a4["SC100_minus_N100_mean"].iloc[0] if "SC100_minus_N100_mean" in a4.columns and len(a4) else np.nan; relh = a4["SC100_minus_N100_hit"].iloc[0] if "SC100_minus_N100_hit" in a4.columns and len(a4) else np.nan
@@ -1104,6 +1109,39 @@ def gold_after_break():
     return _layout(fig, f"There is no consistent positive Micro250 × Gold correlation after a break to sustain: it was positive at the break in {int(ep['positive_at_break'].sum())} of its {len(ep)} episodes ({long['episode']}, where it then stayed positive {int(long['longest_positive_run'])} weeks); the median episode has it positive {medpos:.0f} of the first {C.GOLD_AFTER_BREAK} weeks", 540,
                    f"Left: each gold pair's 13-week correlation from the first week of a decorrelation episode out to week {C.GOLD_AFTER_BREAK}, averaged over the episodes the pair exists in (hover: the share of episodes in which it was positive that week). Right: Micro250 × Gold in each of its own episodes — the components of its average; the legend counts the positive weeks. Micro250 starts in 2022, so it is in the later episodes only.", unified=False, legend_y=-0.14,
                    subtitle="The gold pairs' correlation after each decorrelation episode begins — the average path, and Micro250 × Gold episode by episode")
+
+
+def index_pair_vs_gold_pair():
+    """B2 (review of 2026-10-22): do an index pair's correlation and a gold pair's correlation move in opposite directions? Both series on one panel, their difference underneath, a menu for every combination."""
+    PC = _csv("6_pair_corr13", index_col=0, parse_dates=True); tb = _csv("0_index_vs_gold_pairs")
+    ips = [p for p in PAIR_ORDER if p in PC.columns and "Gold" not in p]; gps = [p for p in PAIR_ORDER if p in PC.columns and "Gold" in p]
+    combos = [(a, b) for a in ips for b in gps]
+    d0 = tuple(C.PAIR_VS_GOLD_DEFAULT) if tuple(C.PAIR_VS_GOLD_DEFAULT) in combos else combos[0]
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.55, 0.45], vertical_spacing=0.09, subplot_titles=("The two correlations, week by week", "Their difference (index pair − gold pair), with its mean and ±1 sd lines"))
+    n_per = 6
+    for a, b in combos:
+        vis = (a, b) == d0
+        row = tb[(tb["index_pair"] == a) & (tb["gold_pair"] == b)].iloc[0]
+        diff = PC[a] - PC[b]; m, s = row["diff_mean"], row["diff_sd"]
+        fig.add_trace(go.Scatter(x=PC.index, y=PC[a], mode="lines", line=_pair_line(a, 1.6), name=_pair_name(a), visible=vis, hovertemplate="%{y:.2f}<extra>" + _pair_name(a) + "</extra>"), row=1, col=1)
+        fig.add_trace(go.Scatter(x=PC.index, y=PC[b], mode="lines", line={"color": _pair_col(b), "width": 1.6, "dash": "solid"}, name=_pair_name(b), visible=vis, hovertemplate="%{y:.2f}<extra>" + _pair_name(b) + "</extra>"), row=1, col=1)
+        fig.add_trace(go.Scatter(x=PC.index, y=diff, mode="lines", line={"color": INK, "width": 1.2}, name=f"difference: {_pair_name(a)} − {_pair_name(b)}", visible=vis, hovertemplate="%{y:+.2f}<extra>difference</extra>"), row=2, col=1)
+        x2 = [PC.index[0], PC.index[-1]]                                   # a flat line needs two points, not 547
+        fig.add_trace(go.Scatter(x=x2, y=[m, m], mode="lines", line={"color": MUTED, "width": 1, "dash": "dot"}, name=f"mean of the difference = {m:+.2f}", visible=vis, hoverinfo="skip"), row=2, col=1)
+        fig.add_trace(go.Scatter(x=x2, y=[m + s] * 2, mode="lines", line={"color": SELL, "width": 1, "dash": "dash"}, name=f"+1 sd = {m + s:+.2f}", visible=vis, hoverinfo="skip"), row=2, col=1)
+        fig.add_trace(go.Scatter(x=x2, y=[m - s] * 2, mode="lines", line={"color": BUY, "width": 1, "dash": "dash"}, name=f"−1 sd = {m - s:+.2f}", visible=vis, hoverinfo="skip"), row=2, col=1)
+    def _lab(a, b):
+        row = tb[(tb["index_pair"] == a) & (tb["gold_pair"] == b)].iloc[0]
+        return f"{_pair_name(a)} vs {_pair_name(b)}  (corr {row['pearson_levels']:+.2f})"
+    buttons = [{"label": _lab(a, b), "method": "update", "args": [{"visible": [(i // n_per) == k for i in range(n_per * len(combos))]}]} for k, (a, b) in enumerate(combos)]
+    fig.update_layout(updatemenus=[{"type": "dropdown", "x": 1.0, "xanchor": "right", "y": 1.12, "yanchor": "top", "showactive": True, "bgcolor": SURFACE, "bordercolor": GRID, "font": {"size": 11}, "active": combos.index(d0), "buttons": buttons}])
+    fig.add_hline(y=0, line={"color": AXIS, "width": 0.8}, row=1, col=1); fig.add_hline(y=0, line={"color": AXIS, "width": 0.8}, row=2, col=1)
+    fig.update_yaxes(range=[-0.8, 1.05], title_text="13-week correlation", row=1, col=1); fig.update_yaxes(range=[-0.8, 1.8], title_text="difference", row=2, col=1)
+    r0 = tb[(tb["index_pair"] == d0[0]) & (tb["gold_pair"] == d0[1])].iloc[0]
+    strongest = tb.loc[tb["pearson_levels"].idxmin()]
+    return _layout(fig, f"{_pair_name(d0[0])} and {_pair_name(d0[1])} do not move in opposite directions: their week-by-week correlation is {r0['pearson_levels']:+.2f} (t {r0['nw_t_levels']:+.1f}), their 4-week changes {r0['pearson_4w_changes']:+.2f}, their 13-week changes {r0['pearson_13w_changes']:+.2f}; the most opposite combination anywhere is {_pair_name(strongest['index_pair'])} vs {_pair_name(strongest['gold_pair'])} at {strongest['pearson_levels']:+.2f}", 680,
+                   f"If the two moved opposite, the top panel's lines would mirror each other and the difference below would swing far beyond its ±1 sd lines whenever one of them moved. What the eye catches instead is the handful of V-shaped dips in the index pair (the decorrelation episodes) during which the gold pair happened to be rising — a few moments, not a relationship: across all {r0['weeks']} weeks the two series are unrelated. The menu switches to any index pair × gold pair; the number in each menu entry is that combination's week-by-week correlation, and the table under the chart has every combination's numbers.", unified=True, legend_y=-0.1,
+                   subtitle="One index pair's 13-week correlation against one gold pair's, week by week, and the difference between them")
 
 
 def vol_state_box():
@@ -1312,7 +1350,7 @@ def ratio_by_state():
 
 
 FIGS = {
-    "0_corr_heatmap": corr_heatmap, "0_corr_rolling": corr_rolling, "0_gold_when_decoupled": gold_when_decoupled, "0_gold_vs_group": gold_vs_group, "0_gold_gap_reversion": gap_reversion, "0_gold_after_break": gold_after_break,
+    "0_corr_heatmap": corr_heatmap, "0_corr_rolling": corr_rolling, "0_gold_when_decoupled": gold_when_decoupled, "0_gold_vs_group": gold_vs_group, "0_gold_gap_reversion": gap_reversion, "0_gold_after_break": gold_after_break, "0_index_vs_gold_pair": index_pair_vs_gold_pair,
     "2_ratio_by_corr": ratio_by_corr, "2_ratio_by_state": ratio_by_state, "5_vol_state_box": vol_state_box, "5_vix_flip_leadlag": vix_flip_leadlag, "5_regime_scatter": regime_scatter, "5_regime_timeline": regime_timeline, "5_lead_lag_blocks": lead_lag_blocks,
     "1_corr_by_state": corr_by_state, "1_corr_around_flip": corr_around_flip, "1_corr_around_flip_pairs": corr_around_flip_pairs, "1_corr_by_breadth": corr_by_breadth, "1_corr_timeseries": corr_timeseries,
     "2_by_year": by_year, "2_corr_quintiles": quintiles, "2_corr_quintiles_pairs": quintiles_pairs, "2_timeline": timeline,

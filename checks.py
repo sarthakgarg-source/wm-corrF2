@@ -275,6 +275,11 @@ def main() -> int:
     gbp_, gba_, gbe_ = histcorr.gold_after_break(rw, corrbreak.episodes(corrbreak.series(rw)))
     e0 = gbe_.iloc[0]; seg_ = PCg[e0["pair"]].loc[pd.Timestamp(e0["start"]):].iloc[:C.GOLD_AFTER_BREAK + 1]
     check("H gold_after_break: corr_at_break = the pair's correlation in the episode's first week; positive weeks counted over the window", np.isclose(e0["corr_at_break"], seg_.iloc[0]) and int(e0[f"weeks_positive_of_first_{C.GOLD_AFTER_BREAK}"]) == int((seg_ > 0).sum()))
+    # H5b. an index pair against a gold pair: the level correlation is the plain Pearson of the two weekly series; the difference is a − b
+    ipg_, ipw_ = histcorr.index_pair_vs_gold_pair(rw)
+    a0, b0 = C.PAIR_VS_GOLD_DEFAULT; r_ = ipg_[(ipg_["index_pair"] == a0) & (ipg_["gold_pair"] == b0)].iloc[0]
+    both2 = PCg[[a0, b0]].dropna()
+    check("H index_pair_vs_gold_pair: pearson_levels = corr of the two weekly correlation series; the weekly difference = a − b; 24 combinations", np.isclose(r_["pearson_levels"], both2[a0].corr(both2[b0])) and np.allclose(ipw_[f"{a0} - {b0}"].dropna(), (PCg[a0] - PCg[b0]).dropna(), atol=1e-9) and len(ipg_) == 6 * 4)
     # H6. the non-overlapping lead/lag: X on t-L+1..t and Y on t+1..t+L share no week, and the level rows are those block values
     L_ = C.LL_BLOCKS[0]
     cL = rw["N100"].rolling(L_).corr(rw["SC100"]); vL = (rw["N100"].rolling(L_).std() + rw["SC100"].rolling(L_).std()) / 2 * np.sqrt(C.ANNUALISE)
@@ -350,7 +355,7 @@ def main() -> int:
     check("D reading guide exists with its three parts and no failed chart", gd.exists() and all(s in gd.read_text(encoding="utf-8") for s in ("Part A", "Part B", "Part C", "Reading it for each combination")) and "failed:" not in gd.read_text(encoding="utf-8"))
     gtxt = gd.read_text(encoding="utf-8") if gd.exists() else ""
     check("D reading guide reads every G study pair by pair (around flips, breadth, lead, jumps, quintiles, >0.90, breaks, replacement)", gtxt.count("Reading it for each pair") >= 6 and all(f"fig_{n}" in gtxt for n in ("1_corr_around_flip_pairs", "1_corr_by_breadth", "2_corr_quintiles_pairs", "5_vol_corr_lead", "5_vol_corr_lead_pairs", "5_together", "5_together_pairs", "5_corr_rise_paths", "5_corr_rise_paths_own", "0_gold_when_decoupled", "5_corr_by_regime_more")))
-    check("D reading guide carries the 2026-10-19 additions (gold scatter / gap / after-break, state distribution, VIX vs flip, regime components, non-overlapping lead/lag, ratio) and checks the review's inferences", all(f"fig_{n}" in gtxt for n in ("0_gold_vs_group", "0_gold_gap_reversion", "0_gold_after_break", "5_vol_state_box", "5_vix_flip_leadlag", "5_regime_scatter", "5_regime_timeline", "5_lead_lag_blocks", "2_ratio_by_corr", "2_ratio_by_state")) and "Inference → what the non-overlapping test says" in gtxt and "B10b" in gtxt)
+    check("D reading guide carries the 2026-10-19 additions (gold scatter / gap / after-break, state distribution, VIX vs flip, regime components, non-overlapping lead/lag, ratio) and checks the review's inferences", all(f"fig_{n}" in gtxt for n in ("0_gold_vs_group", "0_gold_gap_reversion", "0_gold_after_break", "5_vol_state_box", "5_vix_flip_leadlag", "5_regime_scatter", "5_regime_timeline", "5_lead_lag_blocks", "2_ratio_by_corr", "2_ratio_by_state", "0_index_vs_gold_pair")) and "Inference → what the non-overlapping test says" in gtxt and "B10b" in gtxt)
 
     print(f"\n{len(P)} passed, {len(F)} failed")
     if data.is_synthetic():

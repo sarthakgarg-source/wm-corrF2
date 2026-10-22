@@ -261,6 +261,10 @@ def build() -> str:
     H.append(_tbl(gga, fmt="{:+.3f}", index=False, int_cols=("horizon_weeks", "events"), pct_cols=tuple(c for c in gga.columns if c.startswith(("SC100_", "gold_")) and not c.endswith("_hit"))))
     s0 = ggs.iloc[0]
     H.append(_says(f"<b>The SC100×Gold − N100×Gold gap.</b> Mean-reverting (AR(1) {s0['ar1_phi']:.2f}, half-life {s0['half_life_weeks']:.1f} weeks, ADF p {s0['adf_p']:.4f}) by construction — the difference of two 13-week rolling correlations of an unrelated series. It is not a price and cannot be traded; and what followed its extremes in returns is a thin tilt on 18–20 events, read as a tendency and no more."))
+    H.append(_img("0_index_vs_gold_pair"))
+    ipg_ = _csv("0_index_vs_gold_pairs")
+    H.append(_tbl(ipg_.assign(index_pair=ipg_["index_pair"].str.replace("|", " × ", regex=False), gold_pair=ipg_["gold_pair"].str.replace("|", " × ", regex=False)), fmt="{:+.3f}", index=False, int_cols=("weeks", "n_4w_nonoverlap", "n_13w_nonoverlap")))
+    H.append(_says("<b>An index pair's correlation against a gold pair's (added 2026-10-22).</b> For every index pair × gold pair: the correlation between the two weekly series, between their 4- and 13-week changes, and the gold pair's mean when the index pair is loosest vs tightest. N100 × SC100 vs SC100 × Gold: unrelated (−0.03). Nothing in the grid is more opposite than about −0.26, and that does not survive on non-overlapping changes."))
     H.append(_img("0_gold_after_break"))
     H.append(_tbl(gbe, fmt="{:+.2f}", index=False, int_cols=("first_week_at_or_below_zero", f"weeks_positive_of_first_{C.GOLD_AFTER_BREAK}", "longest_positive_run", "peak_week", "weeks_available")))
     em = gbe[gbe["pair"] == "Micro250|GoldMCX"]
