@@ -1144,6 +1144,66 @@ def index_pair_vs_gold_pair():
                    subtitle="One index pair's 13-week correlation against one gold pair's, week by week, and the difference between them")
 
 
+def extreme_followups():
+    """B2 (review of 2026-10-23): what follows a difference series crossing +1 sd or −1 sd — the series itself, its two components, the assets' cumulative returns and their drawdowns; a menu for the gap and the index-pair-minus-gold-pair difference."""
+    sm = _csv("0_extreme_summary"); pt = _csv("0_extreme_paths")
+    H13 = C.EXTREME_FWD[-1]
+    names = [n for n in dict.fromkeys(sm["series"]) if n.startswith("gap:")] + [f"{C.PAIR_VS_GOLD_DEFAULT[0]} - {C.PAIR_VS_GOLD_DEFAULT[1]}"]
+    names = [n for n in names if n in set(sm["series"])]
+    fig = make_subplots(rows=2, cols=2, subplot_titles=("The difference itself around the crossing (week 0)", "Its two components around the crossing (solid = after +1 sd, dotted = after −1 sd)", "Cumulative return after the crossing (solid +1 sd, dotted −1 sd, dashed = any week)", f"Max drawdown inside the next {H13} weeks: after +1 sd / after −1 sd / any week"), horizontal_spacing=0.08, vertical_spacing=0.16)
+    counts, labels = [], []
+    for name in names:
+        a, b = sm[sm["series"] == name].iloc[0][["metric"]].iloc[0], None       # placeholder, components come from the paths' columns
+        p = pt[pt["series"] == name]; s = sm[sm["series"] == name]
+        comps = [m.split("component ")[1].split(":")[0] for m in s["metric"].unique() if m.startswith("component ")]
+        legs = [m.split("return ")[1] for m in s["metric"].unique() if m.startswith("return ")]
+        n0 = 0
+        for side, col_, dash in (("above +1 sd", SELL, "solid"), ("below -1 sd", BUY, "solid")):
+            q = p[p["side"] == side].sort_values("k")
+            n_ev = int(q[q["k"] == 0]["n"].iloc[0]) if len(q[q["k"] == 0]) else 0
+            lab = f"after crossing {side.replace('-', '−')} (n {n_ev})"
+            fig.add_trace(go.Scatter(x=q["k"], y=q["d"], mode="lines+markers", line={"color": col_, "width": 2.2}, marker={"size": 4}, name=lab, legendgroup=side, hovertemplate="k=%{x}: %{y:+.2f}<extra>" + lab + "</extra>"), row=1, col=1); n0 += 1
+            for j, c in enumerate(comps):
+                fig.add_trace(go.Scatter(x=q["k"], y=q[f"comp_{'ab'[j]}"], mode="lines", line={"color": _pair_col(c), "width": 2.0 if j == 0 else 1.6, "dash": "solid" if side.startswith("above") else "dot"}, name=f"{_pair_name(c)} — {side.replace('-', '−')}", legendgroup=side + c, hovertemplate="k=%{x}: %{y:+.2f}<extra>" + _pair_name(c) + " " + side + "</extra>"), row=1, col=2); n0 += 1
+            for x in legs:
+                qq = q[q["k"] >= 0]
+                fig.add_trace(go.Scatter(x=qq["k"], y=qq[f"cum_{x}"], mode="lines", line={"color": COL[x], "width": 2.0, "dash": "solid" if side.startswith("above") else "dot"}, name=f"{x} — {side.replace('-', '−')}", legendgroup=side + x, hovertemplate="k=%{x}: %{y:+.1%}<extra>" + x + " " + side + "</extra>"), row=2, col=1); n0 += 1
+        # the all-weeks cumulative return path: the mean h-week return from the summary at each horizon, joined through 0
+        for x in legs:
+            bs = s[(s["metric"] == f"return {x}") & (s["side"] == "above +1 sd")].set_index("horizon_weeks")["all_weeks_mean"]
+            fig.add_trace(go.Scatter(x=[0] + list(bs.index), y=[0] + list(bs.values), mode="lines", line={"color": COL[x], "width": 1.0, "dash": "dash"}, opacity=0.6, name=f"{x} — any week", legendgroup="base" + x, hovertemplate="k=%{x}: %{y:+.1%}<extra>" + x + " any week</extra>"), row=2, col=1); n0 += 1
+        # drawdown bars
+        d13 = s[(s["horizon_weeks"] == H13) & s["metric"].str.startswith("max drawdown ")]
+        for side, col_, op in (("above +1 sd", SELL, 0.9), ("below -1 sd", BUY, 0.9), ("any week", MUTED, 0.9)):
+            if side == "any week":
+                sub = d13[d13["side"] == "above +1 sd"]; y = sub["all_weeks_mean"]; hv = sub["all_weeks_hit"]
+            else:
+                sub = d13[d13["side"] == side]; y = sub["mean"]; hv = sub["hit"]
+            fig.add_trace(go.Bar(x=[m.replace("max drawdown ", "") for m in sub["metric"]], y=y, marker_color=col_, opacity=op, name=f"max drawdown — {side.replace('-', '−')}", legendgroup="dd" + side, customdata=np.c_[hv, sub["median"] if side != "any week" else sub["all_weeks_median"]], text=[f"{v:.1%}" for v in y], textposition="outside", textfont={"size": 9.5}, hovertemplate="%{x}: %{y:.1%} on average (median %{customdata[1]:.1%}; a fall of more than 5% in %{customdata[0]:.0%} of cases)<extra>" + side + "</extra>"), row=2, col=2); n0 += 1
+        counts.append(n0); labels.append(name.replace("|", " × ").replace("gap: ", "the gap: "))
+    offs = np.cumsum([0] + counts)
+    for i in range(len(names)):
+        for j in range(offs[i], offs[i + 1]):
+            fig.data[j].visible = (i == 0)
+    fig.update_layout(updatemenus=[{"type": "dropdown", "x": 1.0, "xanchor": "right", "y": 1.12, "yanchor": "top", "showactive": True, "bgcolor": SURFACE, "bordercolor": GRID, "font": {"size": 11},
+                                    "buttons": [{"label": labels[i], "method": "update", "args": [{"visible": [offs[i] <= j < offs[i + 1] for j in range(len(fig.data))]}]} for i in range(len(names))]}], barmode="group")
+    for rc in ((1, 1), (1, 2)):
+        fig.add_vline(x=0, line={"color": AXIS, "dash": "dash"}, row=rc[0], col=rc[1]); fig.add_hline(y=0, line={"color": AXIS, "width": 0.8}, row=rc[0], col=rc[1])
+        fig.update_xaxes(title_text="weeks from the crossing", dtick=4, row=rc[0], col=rc[1])
+    fig.add_hline(y=0, line={"color": AXIS, "width": 0.8}, row=2, col=1); fig.update_xaxes(title_text="weeks after the crossing", dtick=4, row=2, col=1)
+    fig.update_yaxes(title_text="difference", row=1, col=1); fig.update_yaxes(title_text="13-week correlation", row=1, col=2); fig.update_yaxes(tickformat="+.0%", row=2, col=1); fig.update_yaxes(tickformat=".0%", row=2, col=2)
+    g0 = sm[(sm["series"] == names[0]) & (sm["horizon_weeks"] == H13)]
+    def _m(side, metric, col_="mean"):
+        x = g0[(g0["side"] == side) & (g0["metric"] == metric)]
+        return x[col_].iloc[0] if len(x) else np.nan
+    nar_a, nar_b = _m("above +1 sd", "the series: change", "hit"), _m("below -1 sd", "the series: change", "hit")
+    ra_, rb_, base_ = _m("above +1 sd", "return SC100"), _m("below -1 sd", "return SC100"), _m("above +1 sd", "return SC100", "all_weeks_mean")
+    da_, db_, dbase = _m("above +1 sd", "max drawdown SC100"), _m("below -1 sd", "max drawdown SC100"), _m("above +1 sd", "max drawdown SC100", "all_weeks_mean")
+    return _layout(fig, f"After the gap crosses a line it comes back ({nar_a:.0%} / {nar_b:.0%} of the time within {H13} weeks) — and what follows for prices is modest: Smallcap {ra_:+.1%} over the next {H13} weeks after +1 sd and {rb_:+.1%} after −1 sd against {base_:+.1%} in any {H13} weeks, with max drawdowns of {da_:.1%} / {db_:.1%} against {dbase:.1%}", 820,
+                   "Each crossing is the first week the difference goes beyond its ±1 sd line (the sd of its whole history); the panels average every crossing. Top left: the difference itself from 8 weeks before to 26 after — the pull back to its mean is the 13-week window rolling off. Top right: which of the two components does the moving (solid = after +1 sd, dotted = after −1 sd). Bottom left: each asset's cumulative return after the crossing (solid after +1 sd, dotted after −1 sd, dashed grey-ish = the average from any week). Bottom right: the largest peak-to-trough fall inside the next 13 weeks, after each kind of crossing and in any 13 weeks; hover gives the share of cases with a fall worse than 5%. The menu switches between the gap and the index-pair-minus-gold-pair difference; every number is in the table under the chart, with 4- and 8-week horizons too.", unified=False, legend_y=-0.08,
+                   subtitle="What follows a difference series crossing +1 sd or −1 sd: the series, its components, returns and drawdowns, each against the all-weeks baseline")
+
+
 def vol_state_box():
     """B7: the distribution behind the averages — every week as a point, with the box (p25 / median / p75), the whiskers (min / max) and the mean (dashed), by the asset's own signal state."""
     pts = _csv("5_state_points", parse_dates=["date"])
@@ -1350,7 +1410,7 @@ def ratio_by_state():
 
 
 FIGS = {
-    "0_corr_heatmap": corr_heatmap, "0_corr_rolling": corr_rolling, "0_gold_when_decoupled": gold_when_decoupled, "0_gold_vs_group": gold_vs_group, "0_gold_gap_reversion": gap_reversion, "0_gold_after_break": gold_after_break, "0_index_vs_gold_pair": index_pair_vs_gold_pair,
+    "0_corr_heatmap": corr_heatmap, "0_corr_rolling": corr_rolling, "0_gold_when_decoupled": gold_when_decoupled, "0_gold_vs_group": gold_vs_group, "0_gold_gap_reversion": gap_reversion, "0_gold_after_break": gold_after_break, "0_index_vs_gold_pair": index_pair_vs_gold_pair, "0_extreme_followups": extreme_followups,
     "2_ratio_by_corr": ratio_by_corr, "2_ratio_by_state": ratio_by_state, "5_vol_state_box": vol_state_box, "5_vix_flip_leadlag": vix_flip_leadlag, "5_regime_scatter": regime_scatter, "5_regime_timeline": regime_timeline, "5_lead_lag_blocks": lead_lag_blocks,
     "1_corr_by_state": corr_by_state, "1_corr_around_flip": corr_around_flip, "1_corr_around_flip_pairs": corr_around_flip_pairs, "1_corr_by_breadth": corr_by_breadth, "1_corr_timeseries": corr_timeseries,
     "2_by_year": by_year, "2_corr_quintiles": quintiles, "2_corr_quintiles_pairs": quintiles_pairs, "2_timeline": timeline,

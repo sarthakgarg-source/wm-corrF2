@@ -10,13 +10,13 @@
     "Micro250",
     "GoldMCX"
   ],
-  "run_at": "2026-10-22T06:42:29",
+  "run_at": "2026-10-23T15:12:46",
   "vol_corr_level": {
-    "level_corr": 0.4461423503377641,
+    "level_corr": 0.4461423503377643,
     "level_spearman": 0.5826726616769183,
     "vix_level_corr": 0.2816179300324325,
     "vix_level_spearman": 0.3331270666207492,
-    "vix_vs_realised_corr": 0.7237156950178052
+    "vix_vs_realised_corr": 0.7237156950178053
   },
   "n_vix_surges": 23,
   "n_corr_rises": 8,
@@ -31,5 +31,5 @@
   "n_trades": 83,
   "n_sell_flips": 60,
   "cash_present": true,
-  "elapsed_s": 9.5
+  "elapsed_s": 37.7
 }

@@ -116,6 +116,8 @@ def run(charts: bool = True) -> None:
     _w(gq, "0_gold_by_group_corr", index=False); _w(gpath, "0_gold_around_decoupling", index=False); _w(gper, "0_gold_in_episodes", index=False)
     ipg, ipgw = histcorr.index_pair_vs_gold_pair(rw)
     _w(ipg, "0_index_vs_gold_pairs", index=False); _w(ipgw, "0_index_vs_gold_pairs_weekly")
+    xev, xsm, xpt = histcorr.extreme_followups(rw)
+    _w(xev, "0_extreme_events", index=False); _w(xsm, "0_extreme_summary", index=False); _w(xpt, "0_extreme_paths", index=False)
     gbp, gba, gbe = histcorr.gold_after_break(rw, cep)
     _w(gbp, "0_gold_after_break_paths", index=False); _w(gba, "0_gold_after_break_avg", index=False); _w(gbe, "0_gold_after_break_episodes", index=False)
     afb, afs = corrbreak.after_break(ab, rw)

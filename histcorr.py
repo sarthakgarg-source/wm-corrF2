@@ -399,6 +399,122 @@ def index_pair_vs_gold_pair(r: pd.DataFrame, w: int = C.HIST_WINDOW) -> tuple[pd
     return pd.DataFrame(rows), wk
 
 
+# ------------------------------------- what follows a difference series crossing ±1 sd (review of 2026-10-23) --
+def _difference_series(PC: pd.DataFrame) -> dict:
+    """The difference series the B2 charts draw, each with its two components and the assets involved:
+    the gap (SC100×Gold − N100×Gold) and every index pair minus every gold pair."""
+    out = {}
+    if {"SC100|GoldMCX", "N100|GoldMCX"} <= set(PC.columns):
+        out["gap: SC100|GoldMCX - N100|GoldMCX"] = ("SC100|GoldMCX", "N100|GoldMCX")
+    for a in [p for p in PC.columns if "Gold" not in p]:
+        for b in [p for p in PC.columns if "Gold" in p]:
+            out[f"{a} - {b}"] = (a, b)
+    return out
+
+
+def _fwd_stats(r: pd.Series, i: int, h: int) -> tuple[float, float, float]:
+    """Over t+1 … t+h from row i: the cumulative log return, the largest peak-to-trough fall inside the window (max drawdown,
+    the peak starting at t), and the lowest point reached from t (max adverse excursion). NaN when the window is short."""
+    seg = r.iloc[i + 1:i + 1 + h]
+    if len(seg) < h or seg.isna().any():
+        return np.nan, np.nan, np.nan
+    c = np.concatenate([[0.0], np.cumsum(seg.values)])
+    peak = np.maximum.accumulate(c)
+    return float(c[-1]), float((peak - c).max()), float(c.min())
+
+
+def extreme_followups(r: pd.DataFrame, w: int = C.HIST_WINDOW, sd_k: float = C.GAP_SD, horizons: tuple = C.EXTREME_FWD, path: int = C.EXTREME_PATH) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """What happens after a difference series (the gap, or an index pair's correlation minus a gold pair's) first crosses
+    +sd_k or −sd_k of its own whole-history sd. For every such crossing (the first week of each run beyond the line) and
+    horizon h: (1) the series itself — its change over h weeks and whether it moved back toward its mean; (2) its two
+    components — each correlation's change over h; (3) returns — each asset involved over t+1 … t+h, and the two relative
+    returns (the index pair's first leg minus its second; the gold pair's index leg minus gold); (4) drawdowns — each asset's
+    largest peak-to-trough fall inside the window and its lowest point from t. Every number comes with the all-weeks
+    baseline (the same statistic started from every week). Returns: per event (wide), the summary (long: series, side,
+    horizon, metric, mean, median, hit, n, all_weeks_mean, all_weeks_hit), and the average paths k = −8 … +path."""
+    PC = pair_corrs(r, w)
+    series = _difference_series(PC)
+    ev_rows, sum_rows, path_rows = [], [], []
+    for name, (a, b) in series.items():
+        d = (PC[a] - PC[b]).rename("d")
+        s = d.dropna()
+        if len(s) < 60:
+            continue
+        m, sd = float(s.mean()), float(s.std())
+        legs = list(dict.fromkeys(a.split("|") + b.split("|")))
+        rel = {f"{a.split('|')[0]} - {a.split('|')[1]}": r[a.split("|")[0]] - r[a.split("|")[1]]}
+        gi = [x for x in b.split("|") if x != C.GOLD]
+        if gi and gi[0] != a.split("|")[0] and gi[0] != a.split("|")[1]:
+            rel[f"{gi[0]} - {C.GOLD}"] = r[gi[0]] - r[C.GOLD]
+        elif gi:
+            rel[f"{gi[0]} - {C.GOLD}"] = r[gi[0]] - r[C.GOLD]
+        idx = d.index
+        # all-weeks baselines, per horizon: the same forward statistics started from every week with the series present
+        base = {}
+        for h in horizons:
+            rows = []
+            for i in range(len(idx)):
+                if pd.isna(d.iloc[i]) or i + h >= len(idx):
+                    continue
+                row = {"series_change": d.iloc[i + h] - d.iloc[i], "comp_a_change": PC[a].iloc[i + h] - PC[a].iloc[i], "comp_b_change": PC[b].iloc[i + h] - PC[b].iloc[i]}
+                for x in legs:
+                    ret, dd, mae = _fwd_stats(r[x], i, h); row[f"ret_{x}"] = ret; row[f"maxdd_{x}"] = dd; row[f"worst_{x}"] = mae
+                for k_, v in rel.items():
+                    row[f"rel_{k_}"] = v.iloc[i + 1:i + 1 + h].sum() if v.iloc[i + 1:i + 1 + h].notna().all() and len(v.iloc[i + 1:i + 1 + h]) == h else np.nan
+                rows.append(row)
+            base[h] = pd.DataFrame(rows)
+        for sign, side in ((1, f"above +{sd_k:g} sd"), (-1, f"below -{sd_k:g} sd")):
+            thr = m + sign * sd_k * sd
+            hit = ((d * sign) > (thr * sign)).fillna(False)
+            starts = [idx.get_loc(x) for x in idx[hit & ~hit.shift(1, fill_value=False)]]
+            per = []
+            for i in starts:
+                row = {"series": name, "side": side, "date": idx[i].date(), "value": float(d.iloc[i]), "threshold": thr, "comp_a": a, "comp_b": b}
+                # weeks until the series is back at its mean (the crossing's side), within `path`
+                back = next((k for k in range(1, path + 1) if i + k < len(idx) and pd.notna(d.iloc[i + k]) and (d.iloc[i + k] - m) * sign <= 0), np.nan)
+                row["weeks_to_mean"] = back
+                for h in horizons:
+                    if i + h < len(idx):
+                        row[f"series_change_{h}"] = d.iloc[i + h] - d.iloc[i]; row[f"toward_mean_{h}"] = bool((d.iloc[i + h] - d.iloc[i]) * sign < 0)
+                        row[f"comp_a_change_{h}"] = PC[a].iloc[i + h] - PC[a].iloc[i]; row[f"comp_b_change_{h}"] = PC[b].iloc[i + h] - PC[b].iloc[i]
+                    for x in legs:
+                        ret, dd, mae = _fwd_stats(r[x], i, h); row[f"ret_{x}_{h}"] = ret; row[f"maxdd_{x}_{h}"] = dd; row[f"worst_{x}_{h}"] = mae
+                    for k_, v in rel.items():
+                        seg = v.iloc[i + 1:i + 1 + h]; row[f"rel_{k_}_{h}"] = seg.sum() if len(seg) == h and seg.notna().all() else np.nan
+                per.append(row)
+                for k in range(-8, path + 1):
+                    if 0 <= i + k < len(idx):
+                        prow = {"series": name, "side": side, "date": idx[i].date(), "k": k, "d": d.iloc[i + k], "comp_a": PC[a].iloc[i + k], "comp_b": PC[b].iloc[i + k]}
+                        for x in legs:
+                            prow[f"cum_{x}"] = r[x].iloc[i + 1:i + 1 + k].sum() if k > 0 and r[x].iloc[i + 1:i + 1 + k].notna().all() else (0.0 if k == 0 else np.nan)
+                        path_rows.append(prow)
+            ev_rows += per
+            pe = pd.DataFrame(per)
+            if not len(pe):
+                continue
+            for h in horizons:
+                bh = base[h]
+                def _add(metric, col, bcol, hit_fn=None):
+                    x = pe[col].dropna() if col in pe.columns else pd.Series(dtype=float)
+                    sum_rows.append({"series": name, "side": side, "horizon_weeks": h, "metric": metric, "events": int(len(x)), "mean": float(x.mean()) if len(x) else np.nan, "median": float(x.median()) if len(x) else np.nan,
+                                     "hit": float(hit_fn(x).mean()) if len(x) and hit_fn is not None else np.nan, "all_weeks_mean": float(bh[bcol].mean()) if bcol in bh.columns else np.nan, "all_weeks_median": float(bh[bcol].median()) if bcol in bh.columns else np.nan,
+                                     "all_weeks_hit": float(hit_fn(bh[bcol].dropna()).mean()) if bcol in bh.columns and hit_fn is not None else np.nan})
+                _add("the series: change", f"series_change_{h}", "series_change", lambda x: (x * sign) < 0)
+                _add(f"component {a}: change", f"comp_a_change_{h}", "comp_a_change", lambda x: x > 0)
+                _add(f"component {b}: change", f"comp_b_change_{h}", "comp_b_change", lambda x: x > 0)
+                for x_ in legs:
+                    _add(f"return {x_}", f"ret_{x_}_{h}", f"ret_{x_}", lambda x: x > 0)
+                    _add(f"max drawdown {x_}", f"maxdd_{x_}_{h}", f"maxdd_{x_}", lambda x: x > 0.05)
+                    _add(f"worst point {x_}", f"worst_{x_}_{h}", f"worst_{x_}", lambda x: x < -0.05)
+                for k_ in rel:
+                    _add(f"relative return {k_}", f"rel_{k_}_{h}", f"rel_{k_}", lambda x: x > 0)
+    paths = pd.DataFrame(path_rows)
+    pth = paths.groupby(["series", "side", "k"]).mean(numeric_only=True).reset_index() if len(paths) else pd.DataFrame()
+    cnt = paths.groupby(["series", "side", "k"])["d"].count().rename("n").reset_index() if len(paths) else pd.DataFrame()
+    pth = pth.merge(cnt, on=["series", "side", "k"]) if len(pth) else pth
+    return pd.DataFrame(ev_rows), pd.DataFrame(sum_rows), pth
+
+
 def gold_after_break(r: pd.DataFrame, cep: pd.DataFrame, w: int = C.HIST_WINDOW, after: int = C.GOLD_AFTER_BREAK) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """B2 (review of 2026-10-19): after the index correlation structure breaks, how long does a gold pair's correlation stay positive?
     For every decorrelation episode and gold pair: the pair's 13-week correlation from the episode's first week (k = 0) to
