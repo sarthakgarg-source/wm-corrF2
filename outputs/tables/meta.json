@@ -10,7 +10,7 @@
     "Micro250",
     "GoldMCX"
   ],
-  "run_at": "2026-10-23T15:12:46",
+  "run_at": "2026-11-03T11:01:55",
   "vol_corr_level": {
     "level_corr": 0.4461423503377643,
     "level_spearman": 0.5826726616769183,
@@ -31,5 +31,5 @@
   "n_trades": 83,
   "n_sell_flips": 60,
   "cash_present": true,
-  "elapsed_s": 37.7
+  "elapsed_s": 27.4
 }

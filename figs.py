@@ -1049,15 +1049,16 @@ def gap_reversion():
     """B2: the SC100×Gold − N100×Gold gap — does it mean-revert, and what followed its extremes?"""
     wk = _csv("0_gold_gap_weekly", index_col=0, parse_dates=True); st = _csv("0_gold_gap_stats").iloc[0]; ae = _csv("0_gold_gap_after_extreme")
     fig = make_subplots(rows=2, cols=2, specs=[[{"colspan": 2}, None], [{}, {}]], row_heights=[0.56, 0.44], vertical_spacing=0.16, horizontal_spacing=0.1,
-                        subplot_titles=(f"The gap week by week — y = SC100×Gold corr minus N100×Gold corr; mean {st['mean']:+.2f}, sd {st['sd']:.2f} over the whole history, so the lines sit at {st['mean'] + C.GAP_SD * st['sd']:+.2f} and {st['mean'] - C.GAP_SD * st['sd']:+.2f}", "Did the gap narrow afterwards?", "What Smallcap − Nifty and gold did afterwards (t+1 …)"))
+                        subplot_titles=(f"The gap week by week — y = SC100×Gold corr minus N100×Gold corr; the ±{C.GAP_SD:g} sd band is point-in-time (an expanding mean ± sd using only data up to each week, after a {C.EP_WARMUP}-week warm-up)", "Did the gap narrow afterwards?", "What Smallcap − Nifty and gold did afterwards (t+1 …)"))
     g = wk["gap"]
     fig.add_trace(go.Scatter(x=g.index, y=g, mode="lines", line={"color": INK, "width": 1.2}, name="gap = SC100×Gold − N100×Gold", hovertemplate="%{y:+.2f}<extra>gap</extra>"), row=1, col=1)
-    up_v, lo_v = float(wk["upper"].iloc[0]), float(wk["lower"].iloc[0])
-    x2 = [g.index[0], g.index[-1]]
-    fig.add_trace(go.Scatter(x=x2, y=[up_v] * 2, mode="lines", line={"color": SELL, "width": 1, "dash": "dash"}, name=f"+{C.GAP_SD:g} sd = {up_v:+.2f}", hovertemplate=f"+{C.GAP_SD:g} sd line: {up_v:+.3f}<extra></extra>"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=x2, y=[st["mean"]] * 2, mode="lines", line={"color": MUTED, "width": 1, "dash": "dot"}, name=f"mean = {st['mean']:+.2f}", hovertemplate=f"mean: {st['mean']:+.3f}<extra></extra>"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=x2, y=[lo_v] * 2, mode="lines", line={"color": BUY, "width": 1, "dash": "dash"}, name=f"−{C.GAP_SD:g} sd = {lo_v:+.2f}", hovertemplate=f"−{C.GAP_SD:g} sd line: {lo_v:+.3f}<extra></extra>"), row=1, col=1)
-    for yv, txt, col_ in ((up_v, f"+{C.GAP_SD:g} sd = {up_v:+.2f}", SELL), (st["mean"], f"mean {st['mean']:+.2f}", INK2), (lo_v, f"−{C.GAP_SD:g} sd = {lo_v:+.2f}", BUY)):
+    up_s, lo_s, mean_s = wk["upper"], wk["lower"], wk["mean"]                    # point-in-time (expanding) band: plot as moving lines, not flat whole-history levels
+    up_last = float(up_s.dropna().iloc[-1]); lo_last = float(lo_s.dropna().iloc[-1]); mean_last = float(mean_s.dropna().iloc[-1])
+    sd_hi, sd_lo = f"+{C.GAP_SD:g} sd", f"−{C.GAP_SD:g} sd"
+    fig.add_trace(go.Scatter(x=up_s.index, y=up_s, mode="lines", line={"color": SELL, "width": 1, "dash": "dash"}, name=f"{sd_hi} (expanding)", hovertemplate="%{y:+.3f}<extra>" + sd_hi + "</extra>"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=mean_s.index, y=mean_s, mode="lines", line={"color": MUTED, "width": 1, "dash": "dot"}, name="mean (expanding)", hovertemplate="%{y:+.3f}<extra>mean</extra>"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=lo_s.index, y=lo_s, mode="lines", line={"color": BUY, "width": 1, "dash": "dash"}, name=f"{sd_lo} (expanding)", hovertemplate="%{y:+.3f}<extra>" + sd_lo + "</extra>"), row=1, col=1)
+    for yv, txt, col_ in ((up_last, f"{sd_hi} now {up_last:+.2f}", SELL), (mean_last, f"mean now {mean_last:+.2f}", INK2), (lo_last, f"{sd_lo} now {lo_last:+.2f}", BUY)):
         fig.add_annotation(x=g.index[-1], y=yv, xref="x", yref="y", text=txt, showarrow=False, xanchor="left", xshift=4, font={"size": 10.5, "color": col_})
     up = (g > wk["upper"]).fillna(False); dn = (g < wk["lower"]).fillna(False)
     su = g.index[up & ~up.shift(1, fill_value=False)]; sd_ = g.index[dn & ~dn.shift(1, fill_value=False)]
@@ -1084,7 +1085,7 @@ def gap_reversion():
     rel = a4["SC100_minus_N100_mean"].iloc[0] if "SC100_minus_N100_mean" in a4.columns and len(a4) else np.nan; relh = a4["SC100_minus_N100_hit"].iloc[0] if "SC100_minus_N100_hit" in a4.columns and len(a4) else np.nan
     return _layout(fig, f"The gap reverts (half-life {st['half_life_weeks']:.0f} weeks) because a rolling correlation must — it narrowed within {C.GAP_FWD[0]} weeks {nar:.0%} of the time; in returns, a thin tilt: after a +{C.GAP_SD:g} sd gap Smallcap beat Nifty over {C.GAP_FWD[0]} weeks {relh:.0%} of the time ({int(a4['events'].iloc[0])} runs, {rel:+.1%})", 760,
                    f"The gap is the difference of two 13-week rolling correlations of a series (gold) that is unrelated to both — so it is noise around zero that the window itself pulls back (autocorrelation {st['autocorr_1w']:.2f} at one week, {st['autocorr_13w']:+.2f} at 13; ADF p {st['adf_p']:.3f}). The narrowing is therefore guaranteed and is not a trade: the gap is not a price. The only use would be if an extreme gap said something about returns; the bottom-right panel tests that on the first week of each run beyond ±{C.GAP_SD:g} sd — {int(ae['events'].max())} or fewer events, read as a tendency, no t-stat.", unified=False, legend_y=-0.1,
-                   subtitle="Top: the gap week by week with its ±1 sd lines and the first week of each run beyond them. Bottom left: how often the gap had moved back toward zero 4 and 13 weeks later. Bottom right: Smallcap minus Nifty, and gold, over the same forward weeks")
+                   subtitle=f"Top: the gap week by week with its point-in-time ±{C.GAP_SD:g} sd band (expanding mean ± sd, only data up to each week, {C.EP_WARMUP}-week warm-up) and the first week of each run beyond it. Bottom left: how often the gap had moved back toward zero 4 and 13 weeks later. Bottom right: Smallcap minus Nifty, and gold, over the same forward weeks")
 
 
 def gold_after_break():
@@ -1117,19 +1118,19 @@ def index_pair_vs_gold_pair():
     ips = [p for p in PAIR_ORDER if p in PC.columns and "Gold" not in p]; gps = [p for p in PAIR_ORDER if p in PC.columns and "Gold" in p]
     combos = [(a, b) for a in ips for b in gps]
     d0 = tuple(C.PAIR_VS_GOLD_DEFAULT) if tuple(C.PAIR_VS_GOLD_DEFAULT) in combos else combos[0]
-    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.55, 0.45], vertical_spacing=0.09, subplot_titles=("The two correlations, week by week", "Their difference (index pair − gold pair), with its mean and ±1 sd lines"))
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.55, 0.45], vertical_spacing=0.09, subplot_titles=("The two correlations, week by week", f"Their difference (index pair − gold pair), with its point-in-time ±{C.GAP_SD:g} sd band (expanding, {C.EP_WARMUP}-week warm-up)"))
     n_per = 6
     for a, b in combos:
         vis = (a, b) == d0
-        row = tb[(tb["index_pair"] == a) & (tb["gold_pair"] == b)].iloc[0]
-        diff = PC[a] - PC[b]; m, s = row["diff_mean"], row["diff_sd"]
+        diff = PC[a] - PC[b]
+        m_exp = diff.expanding(min_periods=C.EP_WARMUP).mean(); sd_exp = diff.expanding(min_periods=C.EP_WARMUP).std()   # point-in-time band: only data up to each week (no look-ahead)
+        up_e = m_exp + C.GAP_SD * sd_exp; lo_e = m_exp - C.GAP_SD * sd_exp
         fig.add_trace(go.Scatter(x=PC.index, y=PC[a], mode="lines", line=_pair_line(a, 1.6), name=_pair_name(a), visible=vis, hovertemplate="%{y:.2f}<extra>" + _pair_name(a) + "</extra>"), row=1, col=1)
         fig.add_trace(go.Scatter(x=PC.index, y=PC[b], mode="lines", line={"color": _pair_col(b), "width": 1.6, "dash": "solid"}, name=_pair_name(b), visible=vis, hovertemplate="%{y:.2f}<extra>" + _pair_name(b) + "</extra>"), row=1, col=1)
         fig.add_trace(go.Scatter(x=PC.index, y=diff, mode="lines", line={"color": INK, "width": 1.2}, name=f"difference: {_pair_name(a)} − {_pair_name(b)}", visible=vis, hovertemplate="%{y:+.2f}<extra>difference</extra>"), row=2, col=1)
-        x2 = [PC.index[0], PC.index[-1]]                                   # a flat line needs two points, not 547
-        fig.add_trace(go.Scatter(x=x2, y=[m, m], mode="lines", line={"color": MUTED, "width": 1, "dash": "dot"}, name=f"mean of the difference = {m:+.2f}", visible=vis, hoverinfo="skip"), row=2, col=1)
-        fig.add_trace(go.Scatter(x=x2, y=[m + s] * 2, mode="lines", line={"color": SELL, "width": 1, "dash": "dash"}, name=f"+1 sd = {m + s:+.2f}", visible=vis, hoverinfo="skip"), row=2, col=1)
-        fig.add_trace(go.Scatter(x=x2, y=[m - s] * 2, mode="lines", line={"color": BUY, "width": 1, "dash": "dash"}, name=f"−1 sd = {m - s:+.2f}", visible=vis, hoverinfo="skip"), row=2, col=1)
+        fig.add_trace(go.Scatter(x=m_exp.index, y=m_exp, mode="lines", line={"color": MUTED, "width": 1, "dash": "dot"}, name="mean of the difference (expanding)", visible=vis, hoverinfo="skip"), row=2, col=1)
+        fig.add_trace(go.Scatter(x=up_e.index, y=up_e, mode="lines", line={"color": SELL, "width": 1, "dash": "dash"}, name=f"+{C.GAP_SD:g} sd (expanding)", visible=vis, hoverinfo="skip"), row=2, col=1)
+        fig.add_trace(go.Scatter(x=lo_e.index, y=lo_e, mode="lines", line={"color": BUY, "width": 1, "dash": "dash"}, name=f"−{C.GAP_SD:g} sd (expanding)", visible=vis, hoverinfo="skip"), row=2, col=1)
     def _lab(a, b):
         row = tb[(tb["index_pair"] == a) & (tb["gold_pair"] == b)].iloc[0]
         return f"{_pair_name(a)} vs {_pair_name(b)}  (corr {row['pearson_levels']:+.2f})"
@@ -1140,7 +1141,7 @@ def index_pair_vs_gold_pair():
     r0 = tb[(tb["index_pair"] == d0[0]) & (tb["gold_pair"] == d0[1])].iloc[0]
     strongest = tb.loc[tb["pearson_levels"].idxmin()]
     return _layout(fig, f"{_pair_name(d0[0])} and {_pair_name(d0[1])} do not move in opposite directions: their week-by-week correlation is {r0['pearson_levels']:+.2f} (t {r0['nw_t_levels']:+.1f}), their 4-week changes {r0['pearson_4w_changes']:+.2f}, their 13-week changes {r0['pearson_13w_changes']:+.2f}; the most opposite combination anywhere is {_pair_name(strongest['index_pair'])} vs {_pair_name(strongest['gold_pair'])} at {strongest['pearson_levels']:+.2f}", 680,
-                   f"If the two moved opposite, the top panel's lines would mirror each other and the difference below would swing far beyond its ±1 sd lines whenever one of them moved. What the eye catches instead is the handful of V-shaped dips in the index pair (the decorrelation episodes) during which the gold pair happened to be rising — a few moments, not a relationship: across all {r0['weeks']} weeks the two series are unrelated. The menu switches to any index pair × gold pair; the number in each menu entry is that combination's week-by-week correlation, and the table under the chart has every combination's numbers.", unified=True, legend_y=-0.1,
+                   f"If the two moved opposite, the top panel's lines would mirror each other and the difference below would swing far beyond its ±{C.GAP_SD:g} sd band whenever one of them moved. What the eye catches instead is the handful of V-shaped dips in the index pair (the decorrelation episodes) during which the gold pair happened to be rising — a few moments, not a relationship: across all {r0['weeks']} weeks the two series are unrelated. The menu switches to any index pair × gold pair; the number in each menu entry is that combination's week-by-week correlation, and the table under the chart has every combination's numbers.", unified=True, legend_y=-0.1,
                    subtitle="One index pair's 13-week correlation against one gold pair's, week by week, and the difference between them")
 
 
@@ -1200,7 +1201,7 @@ def extreme_followups():
     ra_, rb_, base_ = _m("above +1 sd", "return SC100"), _m("below -1 sd", "return SC100"), _m("above +1 sd", "return SC100", "all_weeks_mean")
     da_, db_, dbase = _m("above +1 sd", "max drawdown SC100"), _m("below -1 sd", "max drawdown SC100"), _m("above +1 sd", "max drawdown SC100", "all_weeks_mean")
     return _layout(fig, f"After the gap crosses a line it comes back ({nar_a:.0%} / {nar_b:.0%} of the time within {H13} weeks) — and what follows for prices is modest: Smallcap {ra_:+.1%} over the next {H13} weeks after +1 sd and {rb_:+.1%} after −1 sd against {base_:+.1%} in any {H13} weeks, with max drawdowns of {da_:.1%} / {db_:.1%} against {dbase:.1%}", 820,
-                   "Each crossing is the first week the difference goes beyond its ±1 sd line (the sd of its whole history); the panels average every crossing. Top left: the difference itself from 8 weeks before to 26 after — the pull back to its mean is the 13-week window rolling off. Top right: which of the two components does the moving (solid = after +1 sd, dotted = after −1 sd). Bottom left: each asset's cumulative return after the crossing (solid after +1 sd, dotted after −1 sd, dashed grey-ish = the average from any week). Bottom right: the largest peak-to-trough fall inside the next 13 weeks, after each kind of crossing and in any 13 weeks; hover gives the share of cases with a fall worse than 5%. The menu switches between the gap and the index-pair-minus-gold-pair difference; every number is in the table under the chart, with 4- and 8-week horizons too.", unified=False, legend_y=-0.08,
+                   "Each crossing is the first week the difference goes beyond its point-in-time ±1 sd band (an expanding mean ± sd using only the data up to that week, after a 52-week warm-up); the panels average every crossing. Top left: the difference itself from 8 weeks before to 26 after — the pull back to its mean is the 13-week window rolling off. Top right: which of the two components does the moving (solid = after +1 sd, dotted = after −1 sd). Bottom left: each asset's cumulative return after the crossing (solid after +1 sd, dotted after −1 sd, dashed grey-ish = the average from any week). Bottom right: the largest peak-to-trough fall inside the next 13 weeks, after each kind of crossing and in any 13 weeks; hover gives the share of cases with a fall worse than 5%. The menu switches between the gap and the index-pair-minus-gold-pair difference; every number is in the table under the chart, with 4- and 8-week horizons too.", unified=False, legend_y=-0.08,
                    subtitle="What follows a difference series crossing +1 sd or −1 sd: the series, its components, returns and drawdowns, each against the all-weeks baseline")
 
 
@@ -1409,9 +1410,64 @@ def ratio_by_state():
                    subtitle=f"The forward {F}-week change of each pair's price ratio by the joint signal state and by the sign of its own last {Bk} weeks")
 
 
+def ratio_quantiles():
+    """B10b addition (review of 2026-11-03): forward return, volatility and drawdown of the relative position by the pair's ratio-deviation quintile."""
+    rq = _csv("2_ratio_quantiles"); H = (C.RATIO_FWD, C.FWD_WINDOW); order = [f"Q{i + 1}" for i in range(C.N_BUCKETS)]
+    prs = [p for p in PAIR_ORDER if p in set(rq["pair"])]
+    d0 = C.PAIR_VS_GOLD_DEFAULT[0] if C.PAIR_VS_GOLD_DEFAULT[0] in prs else prs[0]
+    fig = make_subplots(rows=1, cols=3, subplot_titles=("Forward return of the ratio (first − second leg)", "Forward volatility (annualised)", "Max drawdown of the ratio"), horizontal_spacing=0.07)
+    hz_col = {H[0]: INK2, H[1]: INK}
+    for p in prs:
+        g = rq[rq["pair"] == p].set_index("bucket").reindex(order)
+        x = [f"{bk}<br>z {g.loc[bk, 'z_lo']:+.1f}…{g.loc[bk, 'z_hi']:+.1f}" for bk in order]
+        for h in H:
+            op = 0.9 if h == H[1] else 0.55
+            fig.add_trace(go.Bar(x=x, y=g[f"fwd_{h}w_ret_mean"], marker_color=hz_col[h], opacity=op, name=f"next {h} wk", legendgroup=str(h), showlegend=(p == d0), visible=(p == d0), text=[f"{v:.0%}" for v in g[f"fwd_{h}w_ret_hit"]], textposition="outside", textfont={"size": 8.5}, hovertemplate="%{x}: %{y:+.1%} (first leg ahead %{text})<extra>" + f"{h} wk</extra>"), row=1, col=1)
+            fig.add_trace(go.Bar(x=x, y=g[f"fwd_{h}w_vol_mean"], marker_color=hz_col[h], opacity=op, name=f"next {h} wk", legendgroup=str(h), showlegend=False, visible=(p == d0), hovertemplate="%{x}: %{y:.0%}<extra>" + f"{h} wk vol</extra>"), row=1, col=2)
+            fig.add_trace(go.Bar(x=x, y=g[f"fwd_{h}w_dd_mean"], marker_color=hz_col[h], opacity=op, name=f"next {h} wk", legendgroup=str(h), showlegend=False, visible=(p == d0), hovertemplate="%{x}: %{y:.0%}<extra>" + f"{h} wk dd</extra>"), row=1, col=3)
+    n_per = 6
+    fig.update_yaxes(tickformat="+.0%", row=1, col=1); fig.update_yaxes(tickformat=".0%", row=1, col=2); fig.update_yaxes(tickformat=".0%", row=1, col=3)
+    fig.add_hline(y=0, line={"color": AXIS, "width": 0.8}, row=1, col=1)
+    buttons = [{"label": _pair_name(p).replace(" × ", " ÷ "), "method": "update", "args": [{"visible": [(i // n_per) == k for i in range(n_per * len(prs))]}]} for k, p in enumerate(prs)]
+    fig.update_layout(barmode="group", updatemenus=[{"type": "dropdown", "x": 1.0, "xanchor": "right", "y": 1.13, "yanchor": "top", "showactive": True, "bgcolor": SURFACE, "bordercolor": GRID, "font": {"size": 11}, "active": prs.index(d0), "buttons": buttons}])
+    a, b = d0.split("|"); g0 = rq[rq["pair"] == d0].set_index("bucket")
+    r1, r5 = g0.loc["Q1", f"fwd_{H[0]}w_ret_mean"], g0.loc["Q5", f"fwd_{H[0]}w_ret_mean"]
+    return _layout(fig, f"A stretched ratio barely sorts what follows: for {a} ÷ {b} the next-{H[0]}-week relative return goes from {r1:+.1%} in the cheapest-{a} quintile (Q1) to {r5:+.1%} in the richest (Q5), and forward volatility and drawdown are flat across the quintiles", 560,
+                   f"The ratio = {a} ÷ {b}; each week is placed in a quintile of its deviation z (ln-ratio vs its trailing {C.PAIR_WINDOW}-week norm; range under each label, Q1 = {a} cheapest). The bars are the forward long-{a}/short-{b} position over the next {H[0]} and {H[1]} weeks — left: cumulative relative return (number = share the first leg led); middle: realised volatility (annualised); right: the largest peak-to-trough fall. Menu switches the pair.", unified=False, legend_y=-0.14,
+                   subtitle=f"Forward return, volatility and drawdown of the relative position by the pair's ratio-deviation quintile at week t")
+
+
+def atr_quantiles():
+    """B8 addition (review of 2026-11-03): forward return, volatility and drawdown of each index by its ATR% quintile."""
+    aq = _csv("5_atr_quantiles"); H = (C.RATIO_FWD, C.FWD_WINDOW); order = [f"Q{i + 1}" for i in range(C.N_BUCKETS)]
+    assets = [a for a in C.ASSETS if a in set(aq["asset"])]
+    d0 = "SC100" if "SC100" in assets else assets[0]
+    fig = make_subplots(rows=1, cols=3, subplot_titles=("Forward return", "Forward volatility (annualised)", "Max drawdown"), horizontal_spacing=0.07)
+    hz_col = {H[0]: INK2, H[1]: INK}
+    for p in assets:
+        g = aq[aq["asset"] == p].set_index("bucket").reindex(order)
+        x = [f"{bk}<br>ATR {g.loc[bk, 'atr_lo']:.1%}–{g.loc[bk, 'atr_hi']:.1%}" for bk in order]
+        for h in H:
+            op = 0.9 if h == H[1] else 0.55
+            fig.add_trace(go.Bar(x=x, y=g[f"fwd_{h}w_ret_mean"], marker_color=hz_col[h], opacity=op, name=f"next {h} wk", legendgroup=str(h), showlegend=(p == d0), visible=(p == d0), text=[f"{v:.0%}" for v in g[f"fwd_{h}w_ret_hit"]], textposition="outside", textfont={"size": 8.5}, hovertemplate="%{x}: %{y:+.1%} (up %{text})<extra>" + f"{h} wk</extra>"), row=1, col=1)
+            fig.add_trace(go.Bar(x=x, y=g[f"fwd_{h}w_vol_mean"], marker_color=hz_col[h], opacity=op, name=f"next {h} wk", legendgroup=str(h), showlegend=False, visible=(p == d0), hovertemplate="%{x}: %{y:.0%}<extra>" + f"{h} wk vol</extra>"), row=1, col=2)
+            fig.add_trace(go.Bar(x=x, y=g[f"fwd_{h}w_dd_mean"], marker_color=hz_col[h], opacity=op, name=f"next {h} wk", legendgroup=str(h), showlegend=False, visible=(p == d0), hovertemplate="%{x}: %{y:.0%}<extra>" + f"{h} wk dd</extra>"), row=1, col=3)
+    n_per = 6
+    fig.update_yaxes(tickformat="+.0%", row=1, col=1); fig.update_yaxes(tickformat=".0%", row=1, col=2); fig.update_yaxes(tickformat=".0%", row=1, col=3)
+    fig.add_hline(y=0, line={"color": AXIS, "width": 0.8}, row=1, col=1)
+    buttons = [{"label": p, "method": "update", "args": [{"visible": [(i // n_per) == k for i in range(n_per * len(assets))]}]} for k, p in enumerate(assets)]
+    fig.update_layout(barmode="group", updatemenus=[{"type": "dropdown", "x": 1.0, "xanchor": "right", "y": 1.13, "yanchor": "top", "showactive": True, "bgcolor": SURFACE, "bordercolor": GRID, "font": {"size": 11}, "active": assets.index(d0), "buttons": buttons}])
+    g0 = aq[aq["asset"] == d0].set_index("bucket")
+    v1, v5 = g0.loc["Q1", f"fwd_{H[0]}w_vol_mean"], g0.loc["Q5", f"fwd_{H[0]}w_vol_mean"]
+    dd1, dd5 = g0.loc["Q1", f"fwd_{H[0]}w_dd_mean"], g0.loc["Q5", f"fwd_{H[0]}w_dd_mean"]
+    return _layout(fig, f"ATR% persists: for {d0} the calmest weeks (Q1) are followed by {v1:.0%} annualised volatility over the next {H[0]} weeks and the wildest (Q5) by {v5:.0%}, with the max drawdown rising from {dd1:.0%} to {dd5:.0%} — the forward return itself barely sorts", 560,
+                   f"Each week is placed in a quintile of the index's ATR% (range under each label, Q1 = calmest). The bars are the index's own forward path over the next {H[0]} and {H[1]} weeks — left: cumulative return (number = share positive); middle: realised volatility (annualised); right: the largest peak-to-trough fall. Menu switches the index.", unified=False, legend_y=-0.14,
+                   subtitle=f"Forward return, volatility and drawdown by the index's ATR% quintile at week t")
+
+
 FIGS = {
     "0_corr_heatmap": corr_heatmap, "0_corr_rolling": corr_rolling, "0_gold_when_decoupled": gold_when_decoupled, "0_gold_vs_group": gold_vs_group, "0_gold_gap_reversion": gap_reversion, "0_gold_after_break": gold_after_break, "0_index_vs_gold_pair": index_pair_vs_gold_pair, "0_extreme_followups": extreme_followups,
-    "2_ratio_by_corr": ratio_by_corr, "2_ratio_by_state": ratio_by_state, "5_vol_state_box": vol_state_box, "5_vix_flip_leadlag": vix_flip_leadlag, "5_regime_scatter": regime_scatter, "5_regime_timeline": regime_timeline, "5_lead_lag_blocks": lead_lag_blocks,
+    "2_ratio_by_corr": ratio_by_corr, "2_ratio_by_state": ratio_by_state, "2_ratio_quantiles": ratio_quantiles, "5_atr_quantiles": atr_quantiles, "5_vol_state_box": vol_state_box, "5_vix_flip_leadlag": vix_flip_leadlag, "5_regime_scatter": regime_scatter, "5_regime_timeline": regime_timeline, "5_lead_lag_blocks": lead_lag_blocks,
     "1_corr_by_state": corr_by_state, "1_corr_around_flip": corr_around_flip, "1_corr_around_flip_pairs": corr_around_flip_pairs, "1_corr_by_breadth": corr_by_breadth, "1_corr_timeseries": corr_timeseries,
     "2_by_year": by_year, "2_corr_quintiles": quintiles, "2_corr_quintiles_pairs": quintiles_pairs, "2_timeline": timeline,
     "3_corr_series": cb_series, "3_corr_episodes": cb_episodes, "3_who_breaks_correlation": cb_summary, "3_after_break": cb_after,

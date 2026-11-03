@@ -152,6 +152,56 @@ def ratio_study(r: pd.DataFrame, st: pd.DataFrame, w: int = C.HIST_WINDOW, back:
     return pd.DataFrame(rows), (pd.concat(weekly, ignore_index=True) if weekly else pd.DataFrame())
 
 
+def _ret_vol_dd(s: pd.Series, i: int, h: int) -> tuple[float, float, float]:
+    """Over t+1 … t+h from row i of a weekly (log) return series: the cumulative return, the realised volatility
+    (sd of the weekly returns × √ANNUALISE) and the largest peak-to-trough fall (max drawdown, peak starting at t).
+    NaN when the window is short or has a gap."""
+    seg = s.iloc[i + 1:i + 1 + h]
+    if len(seg) < h or seg.isna().any():
+        return np.nan, np.nan, np.nan
+    v = seg.to_numpy(dtype=float); c = np.concatenate([[0.0], np.cumsum(v)])
+    return float(c[-1]), float(seg.std(ddof=1) * np.sqrt(C.ANNUALISE)), float((np.maximum.accumulate(c) - c).max())
+
+
+def ratio_quantiles(r: pd.DataFrame, px_w: pd.DataFrame, w: int = C.PAIR_WINDOW, min_obs: int = C.PAIR_MIN_OBS,
+                    horizons: tuple = (C.RATIO_FWD, C.FWD_WINDOW), nb: int = C.N_BUCKETS) -> pd.DataFrame:
+    """B10b addition (review of 2026-11-03): sort each pair's weeks by the RATIO's deviation and look forward.
+    The ratio = first leg ÷ second leg; its deviation z = (lr − mean) / sd of lr = ln(P_a/P_b) over the trailing
+    `w` weeks (the same z-score as the pair cards). Each week is placed in a quintile of z, and for h ∈ `horizons`
+    the forward relative position (long the first leg, short the second: weekly return r_a − r_b) is measured over
+    t+1 … t+h — its return, its realised volatility and its max drawdown — then averaged per quintile. Tests whether
+    a stretched ratio (z in Q1 / Q5) is followed by a different forward return, a calmer/wilder path, or a deeper
+    drawdown than a ratio near its norm (Q3). Per pair; `2_ratio_quantiles`."""
+    labels = [f"Q{i + 1}" for i in range(nb)]
+    PC = pair_corrs(r, C.HIST_WINDOW)
+    out = []
+    for p in PC.columns:
+        a, b = p.split("|")
+        if a not in px_w.columns or b not in px_w.columns:
+            continue
+        lr = (np.log(px_w[a]) - np.log(px_w[b]))
+        z = ((lr - lr.rolling(w, min_periods=min_obs).mean()) / lr.rolling(w, min_periods=min_obs).std()).reindex(r.index)
+        rel = (r[a] - r[b])
+        df = pd.DataFrame({"z": z}).dropna()
+        if len(df) < 5 * nb:
+            continue
+        df["bucket"] = pd.qcut(df["z"], nb, labels=labels, duplicates="drop")
+        for h in horizons:
+            vals = [_ret_vol_dd(rel, r.index.get_loc(t), h) for t in df.index]
+            df[[f"ret{h}", f"vol{h}", f"dd{h}"]] = pd.DataFrame(vals, index=df.index)
+        for bk, sub in df.groupby("bucket", observed=True):
+            rec = {"pair": p, "bucket": str(bk), "z_lo": float(sub["z"].min()), "z_hi": float(sub["z"].max()), "weeks": int(len(sub))}
+            for h in horizons:
+                ok = sub[f"ret{h}"].dropna()
+                rec[f"n_fwd_{h}w"] = int(len(ok))
+                rec[f"fwd_{h}w_ret_mean"] = float(ok.mean()) if len(ok) else np.nan
+                rec[f"fwd_{h}w_ret_hit"] = float((ok > 0).mean()) if len(ok) else np.nan
+                rec[f"fwd_{h}w_vol_mean"] = float(sub[f"vol{h}"].dropna().mean()) if sub[f"vol{h}"].notna().any() else np.nan
+                rec[f"fwd_{h}w_dd_mean"] = float(sub[f"dd{h}"].dropna().mean()) if sub[f"dd{h}"].notna().any() else np.nan
+            out.append(rec)
+    return pd.DataFrame(out)
+
+
 def timeline(r: pd.DataFrame, lvl: pd.Series | None) -> pd.DataFrame:
     mc = rolling_mean_corr(r, C.EQUITY, C.HIST_WINDOW)
     out = pd.DataFrame({"mean_corr_13w": mc, "N100_ret_13w": r[C.BENCHMARK].rolling(C.HIST_WINDOW).sum(),
@@ -330,7 +380,7 @@ def gap_reversion(r: pd.DataFrame, w: int = C.HIST_WINDOW, sd_k: float = C.GAP_S
     """B2 (review of 2026-10-19): the SC100×Gold − N100×Gold gap looks mean-reverting — is it, and can it be used? (a) The gap's statistics:
     mean, sd, autocorrelation at 1/4/13 weeks, AR(1) coefficient and half-life, ADF p-value — with the caveat that a 13-week
     rolling correlation reverts by construction as the window rolls off. (b) What followed an extreme gap (beyond ±sd_k sd of
-    its own full-sample sd, counted once per run): the gap's change over the next 4 / 13 weeks and how often it narrowed, and
+    its own EXPANDING point-in-time band — only data up to each week, no look-ahead — counted once per run): the gap's change over the next 4 / 13 weeks and how often it narrowed, and
     the returns that would make it usable — SC100 minus N100, and gold, over the same forward weeks (t+1 …). (c) The weekly series."""
     from statsmodels.tsa.stattools import adfuller
     PC = pair_corrs(r, w)
@@ -338,6 +388,8 @@ def gap_reversion(r: pd.DataFrame, w: int = C.HIST_WINDOW, sd_k: float = C.GAP_S
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
     gap = (PC["SC100|GoldMCX"] - PC["N100|GoldMCX"]).rename("gap")
     s = gap.dropna()
+    m_exp = gap.expanding(min_periods=C.EP_WARMUP).mean()             # point-in-time band: only data up to each week (no look-ahead)
+    sd_exp = gap.expanding(min_periods=C.EP_WARMUP).std()
     x, y = s.shift(1).dropna(), s.diff().dropna()
     phi = 1.0 + float(np.polyfit(x.values, y.values, 1)[0])
     st = {"weeks": int(len(s)), "mean": float(s.mean()), "sd": float(s.std()), "min": float(s.min()), "max": float(s.max()),
@@ -346,20 +398,21 @@ def gap_reversion(r: pd.DataFrame, w: int = C.HIST_WINDOW, sd_k: float = C.GAP_S
           "adf_p": float(adfuller(s.values, autolag="AIC", result_object=False)[1]) if len(s) > 30 else np.nan,
           "share_weeks_beyond_1sd": float((s.abs() > sd_k * s.std()).mean()), "weeks_above_zero_share": float((s > 0).mean())}
     rel = (r["SC100"] - r[C.BENCHMARK]) if "SC100" in r.columns else None
-    wk = pd.DataFrame({"gap": gap, "upper": s.mean() + sd_k * s.std(), "lower": s.mean() - sd_k * s.std()})
+    wk = pd.DataFrame({"gap": gap, "upper": m_exp + sd_k * sd_exp, "lower": m_exp - sd_k * sd_exp, "mean": m_exp})
     rows = []
     for sign, name in ((1, f"gap above +{sd_k:g} sd (Smallcap's gold corr the higher)"), (-1, f"gap below −{sd_k:g} sd (Nifty's gold corr the higher)")):
-        thr = s.mean() + sign * sd_k * s.std()
-        hit = (s * sign) > (thr * sign)
-        starts = s.index[hit & ~hit.shift(1, fill_value=False)]          # the first week of each run beyond the line
+        thr_s = m_exp + sign * sd_k * sd_exp                             # the band as it stood each week
+        hit = (gap * sign) > (thr_s * sign)
+        hit = hit.fillna(False)
+        starts = gap.index[hit & ~hit.shift(1, fill_value=False)]        # the first week of each run beyond its own expanding band
         for h in fwd:
             chg = gap.shift(-h) - gap
             toward = (chg * sign) < 0
             fr = _fwd(rel, h) if rel is not None else None; fg = _fwd(r["GoldMCX"], h) if "GoldMCX" in r.columns else None
             ok = [d for d in starts if pd.notna(chg.get(d))]
-            row = {"extreme": name, "threshold": float(thr), "horizon_weeks": h, "events": int(len(ok)),
+            row = {"extreme": name, "threshold_now": float(thr_s.dropna().iloc[-1]) if sd_exp.notna().any() else np.nan, "horizon_weeks": h, "events": int(len(ok)),
                    "mean_gap_change": float(chg.loc[ok].mean()) if ok else np.nan, "share_gap_narrowed": float(toward.loc[ok].mean()) if ok else np.nan,
-                   "mean_gap_at_event": float(s.loc[ok].mean()) if ok else np.nan}
+                   "mean_gap_at_event": float(gap.loc[ok].mean()) if ok else np.nan}
             if fr is not None:
                 row["SC100_minus_N100_mean"] = float(fr.loc[ok].mean()) if ok else np.nan; row["SC100_minus_N100_hit"] = float((fr.loc[ok] > 0).mean()) if ok else np.nan
                 row["SC100_minus_N100_all_weeks_mean"] = float(fr.mean())
@@ -425,7 +478,8 @@ def _fwd_stats(r: pd.Series, i: int, h: int) -> tuple[float, float, float]:
 
 def extreme_followups(r: pd.DataFrame, w: int = C.HIST_WINDOW, sd_k: float = C.GAP_SD, horizons: tuple = C.EXTREME_FWD, path: int = C.EXTREME_PATH) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """What happens after a difference series (the gap, or an index pair's correlation minus a gold pair's) first crosses
-    +sd_k or −sd_k of its own whole-history sd. For every such crossing (the first week of each run beyond the line) and
+    +sd_k or −sd_k of its own EXPANDING (point-in-time) band — the mean ± sd using only data up to that week, after a
+    C.EP_WARMUP warm-up, so no crossing is flagged with hindsight. For every such crossing (the first week of each run) and
     horizon h: (1) the series itself — its change over h weeks and whether it moved back toward its mean; (2) its two
     components — each correlation's change over h; (3) returns — each asset involved over t+1 … t+h, and the two relative
     returns (the index pair's first leg minus its second; the gold pair's index leg minus gold); (4) drawdowns — each asset's
@@ -440,7 +494,8 @@ def extreme_followups(r: pd.DataFrame, w: int = C.HIST_WINDOW, sd_k: float = C.G
         s = d.dropna()
         if len(s) < 60:
             continue
-        m, sd = float(s.mean()), float(s.std())
+        m_exp = d.expanding(min_periods=C.EP_WARMUP).mean()           # point-in-time band: only data up to each week (no look-ahead)
+        sd_exp = d.expanding(min_periods=C.EP_WARMUP).std()
         legs = list(dict.fromkeys(a.split("|") + b.split("|")))
         rel = {f"{a.split('|')[0]} - {a.split('|')[1]}": r[a.split("|")[0]] - r[a.split("|")[1]]}
         gi = [x for x in b.split("|") if x != C.GOLD]
@@ -464,14 +519,15 @@ def extreme_followups(r: pd.DataFrame, w: int = C.HIST_WINDOW, sd_k: float = C.G
                 rows.append(row)
             base[h] = pd.DataFrame(rows)
         for sign, side in ((1, f"above +{sd_k:g} sd"), (-1, f"below -{sd_k:g} sd")):
-            thr = m + sign * sd_k * sd
-            hit = ((d * sign) > (thr * sign)).fillna(False)
+            thr_s = m_exp + sign * sd_k * sd_exp                       # the band as it stood each week
+            hit = ((d * sign) > (thr_s * sign)).fillna(False)         # NaN in the warm-up → not a crossing
             starts = [idx.get_loc(x) for x in idx[hit & ~hit.shift(1, fill_value=False)]]
             per = []
             for i in starts:
-                row = {"series": name, "side": side, "date": idx[i].date(), "value": float(d.iloc[i]), "threshold": thr, "comp_a": a, "comp_b": b}
-                # weeks until the series is back at its mean (the crossing's side), within `path`
-                back = next((k for k in range(1, path + 1) if i + k < len(idx) and pd.notna(d.iloc[i + k]) and (d.iloc[i + k] - m) * sign <= 0), np.nan)
+                m_cross = float(m_exp.iloc[i])                        # the mean as known at the crossing week
+                row = {"series": name, "side": side, "date": idx[i].date(), "value": float(d.iloc[i]), "threshold": float(thr_s.iloc[i]), "comp_a": a, "comp_b": b}
+                # weeks until the series is back at the mean it crossed from, within `path`
+                back = next((k for k in range(1, path + 1) if i + k < len(idx) and pd.notna(d.iloc[i + k]) and (d.iloc[i + k] - m_cross) * sign <= 0), np.nan)
                 row["weeks_to_mean"] = back
                 for h in horizons:
                     if i + h < len(idx):

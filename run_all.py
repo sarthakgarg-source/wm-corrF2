@@ -95,6 +95,7 @@ def run(charts: bool = True) -> None:
     _w(ggs, "0_gold_gap_stats", index=False); _w(gga, "0_gold_gap_after_extreme", index=False); _w(ggw, "0_gold_gap_weekly")
     rs, rsw = histcorr.ratio_study(rw, st)
     _w(rs, "2_ratio_study", index=False); _w(rsw, "2_ratio_weekly", index=False)
+    _w(histcorr.ratio_quantiles(rw, px_w), "2_ratio_quantiles", index=False)
     print("2. history: by year, quintiles (+ next 4 weeks), timeline, high-correlation episodes — G and every pair; gold vs the group, the gold gap, the ratio study")
 
     # 3. who breaks the CORRELATION first
@@ -148,6 +149,7 @@ def run(charts: bool = True) -> None:
     _w(cv.attrs["edges"], "5_vol_regime_edges")
     atrp = vol.atr_pct(panel)
     _w(atrp, "5_atr_pct_weekly")
+    _w(vol.atr_quantiles(atrp, rw), "5_atr_quantiles", index=False)
     regs, regs_long = vol.corr_by_regime(rw, lvl, atrp=atrp)
     _w(regs_long, "5_corr_by_regime_long", index=False)
     for name, w in regs.items():

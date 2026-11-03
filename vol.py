@@ -256,6 +256,45 @@ def atr_pct(panel: dict, labels: list[str] | None = None, freq: str = C.SIGNAL_B
     return df[df.index >= pd.Timestamp(C.START)]
 
 
+def _ret_vol_dd(s: pd.Series, i: int, h: int) -> tuple[float, float, float]:
+    """Over t+1 … t+h from row i: cumulative return, realised vol (sd × √ANNUALISE) and max drawdown. NaN if short/gapped."""
+    seg = s.iloc[i + 1:i + 1 + h]
+    if len(seg) < h or seg.isna().any():
+        return np.nan, np.nan, np.nan
+    v = seg.to_numpy(dtype=float); c = np.concatenate([[0.0], np.cumsum(v)])
+    return float(c[-1]), float(seg.std(ddof=1) * np.sqrt(C.ANNUALISE)), float((np.maximum.accumulate(c) - c).max())
+
+
+def atr_quantiles(atrp: pd.DataFrame, r: pd.DataFrame, horizons: tuple = (C.RATIO_FWD, C.FWD_WINDOW), nb: int = C.N_BUCKETS) -> pd.DataFrame:
+    """B8 addition (review of 2026-11-03): sort each index's weeks by its ATR% level into quintiles and look forward.
+    For h ∈ `horizons` the index's own forward path over t+1 … t+h — return, realised volatility, max drawdown —
+    averaged per ATR% quintile. Tests whether a calm week (Q1) or a wild week (Q5) is followed by a different return,
+    more volatility (persistence) or a deeper drawdown. Per index; `5_atr_quantiles`."""
+    labels = [f"Q{i + 1}" for i in range(nb)]
+    out = []
+    for a in atrp.columns:
+        if a not in r.columns:
+            continue
+        df = pd.DataFrame({"atr": atrp[a]}).reindex(r.index).dropna()
+        if len(df) < 5 * nb:
+            continue
+        df["bucket"] = pd.qcut(df["atr"], nb, labels=labels, duplicates="drop")
+        for h in horizons:
+            vals = [_ret_vol_dd(r[a], r.index.get_loc(t), h) for t in df.index]
+            df[[f"ret{h}", f"vol{h}", f"dd{h}"]] = pd.DataFrame(vals, index=df.index)
+        for bk, sub in df.groupby("bucket", observed=True):
+            rec = {"asset": a, "bucket": str(bk), "atr_lo": float(sub["atr"].min()), "atr_hi": float(sub["atr"].max()), "weeks": int(len(sub))}
+            for h in horizons:
+                ok = sub[f"ret{h}"].dropna()
+                rec[f"n_fwd_{h}w"] = int(len(ok))
+                rec[f"fwd_{h}w_ret_mean"] = float(ok.mean()) if len(ok) else np.nan
+                rec[f"fwd_{h}w_ret_hit"] = float((ok > 0).mean()) if len(ok) else np.nan
+                rec[f"fwd_{h}w_vol_mean"] = float(sub[f"vol{h}"].dropna().mean()) if sub[f"vol{h}"].notna().any() else np.nan
+                rec[f"fwd_{h}w_dd_mean"] = float(sub[f"dd{h}"].dropna().mean()) if sub[f"dd{h}"].notna().any() else np.nan
+            out.append(rec)
+    return pd.DataFrame(out)
+
+
 def corr_by_regime(r: pd.DataFrame, lvl: pd.Series | None = None, ref: str = C.BENCHMARK, atrp: pd.DataFrame | None = None) -> tuple[dict, pd.DataFrame]:
     """The regime definitions: the benchmark's vol, the pair's own average vol, the VIX level (if present); then each leg's own vol
     separately (the two components of the pair's vol), and — if `atrp` is given — the benchmark's ATR% and the pair's own ATR%."""

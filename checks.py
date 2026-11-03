@@ -236,6 +236,13 @@ def main() -> int:
     import supertrend as ST_
     bars_ = ST_.resample_ohlc(panel["N100"], C.SIGNAL_BAR)
     check("G atr_pct = the desk's 5-bar LW ATR on weekly bars divided by the close, from START", np.isclose(atr_["N100"].dropna().iloc[-1], (ST_.atr(bars_) / bars_["close"]).dropna().iloc[-1]) and atr_.index[0] >= pd.Timestamp(C.START))
+    aqt_ = vol.atr_quantiles(atr_, rw)
+    structa_ = all(len(g) == C.N_BUCKETS and g.set_index("bucket").loc["Q1", "atr_lo"] < g.set_index("bucket").loc["Q5", "atr_lo"] for _, g in aqt_.groupby("asset"))
+    dfa_ = pd.DataFrame({"atr": atr_["SC100"]}).reindex(rw.index).dropna(); dfa_["bk"] = pd.qcut(dfa_["atr"], C.N_BUCKETS, labels=[f"Q{i + 1}" for i in range(C.N_BUCKETS)])
+    q5a_ = [rw.index.get_loc(t) for t in dfa_[dfa_["bk"] == "Q5"].index]
+    mana_ = np.mean([rw["SC100"].iloc[i + 1:i + 1 + C.RATIO_FWD].sum() for i in q5a_ if i + C.RATIO_FWD < len(rw.index) and rw["SC100"].iloc[i + 1:i + 1 + C.RATIO_FWD].notna().all()])
+    g5a_ = aqt_[(aqt_["asset"] == "SC100") & (aqt_["bucket"] == "Q5")].iloc[0]
+    check("G atr_quantiles: 5 ATR% quintiles per index ordered calm→wild; forward 4w return = mean index return summed over t+1..t+4 in the quintile", structa_ and np.isclose(g5a_["fwd_4w_ret_mean"], mana_, atol=1e-6))
     regs_, regl2 = vol.corr_by_regime(rw, lvl, atrp=atr_)
     check("G corr_by_regime carries each leg's vol and the ATR regimes, with weeks per fifth summing to the pair's weeks", {"first leg's vol", "second leg's vol", "N100 ATR%", "pair's own ATR%"} <= set(regs_) and int(regl2[(regl2["regime"] == "pair's own vol") & (regl2["pair"] == "N100|SC100")]["weeks"].sum()) == int(sigcorr.pair_corrs(rw)["N100|SC100"].notna().sum()))
     gwk_, gsum_ = histcorr.gold_corr_rank(rw)
@@ -265,8 +272,8 @@ def main() -> int:
     check("H gold_vs_group: slope = OLS of the gold-pair correlation on G; Pearson matches; decile weeks sum to n", np.isclose(gvf_.loc["N100|GoldMCX", "slope"], b_) and np.isclose(gvf_.loc["N100|GoldMCX", "pearson"], d_["G"].corr(d_["N100|GoldMCX"])) and int(gvb_[gvb_["y"] == "N100|GoldMCX"]["weeks"].sum()) == int(gvf_.loc["N100|GoldMCX", "n"]))
     # H4. the gap: the AR(1) half-life follows from phi; an extreme's forward return uses t+1..t+h; events are first weeks of runs
     ggs_, gga_, ggw_ = histcorr.gap_reversion(rw)
-    s0_ = ggs_.iloc[0]; gap_ = ggw_["gap"].dropna()
-    up_ = (gap_ > s0_["mean"] + C.GAP_SD * s0_["sd"]); starts_ = gap_.index[up_ & ~up_.shift(1, fill_value=False)]
+    s0_ = ggs_.iloc[0]; gap_ = ggw_["gap"]
+    up_ = (gap_ > ggw_["upper"]).fillna(False); starts_ = gap_.index[up_ & ~up_.shift(1, fill_value=False)]   # the point-in-time (expanding) band, as histcorr builds it
     a4_ = gga_[(gga_["horizon_weeks"] == C.GAP_FWD[0]) & gga_["extreme"].str.contains("above")].iloc[0]
     relf = (rw["SC100"] - rw["N100"]).shift(-1).rolling(C.GAP_FWD[0]).sum().shift(-(C.GAP_FWD[0] - 1))
     ok_ = [d for d in starts_ if pd.notna((ggw_["gap"].shift(-C.GAP_FWD[0]) - ggw_["gap"]).get(d))]
@@ -284,12 +291,20 @@ def main() -> int:
     xev_, xsm_, xpt_ = histcorr.extreme_followups(rw)
     gname = [n for n in xev_["series"].unique() if n.startswith("gap:")][0]
     ge = xev_[(xev_["series"] == gname) & (xev_["side"].str.startswith("above"))]
-    gap_s = (PCg["SC100|GoldMCX"] - PCg["N100|GoldMCX"]); up = (gap_s > gap_s.mean() + C.GAP_SD * gap_s.std()).fillna(False); starts = gap_s.index[up & ~up.shift(1, fill_value=False)]
+    gap_s = (PCg["SC100|GoldMCX"] - PCg["N100|GoldMCX"])
+    m_exp_ = gap_s.expanding(min_periods=C.EP_WARMUP).mean(); sd_exp_ = gap_s.expanding(min_periods=C.EP_WARMUP).std()   # point-in-time (expanding) band, as histcorr.extreme_followups builds it
+    up = (gap_s > (m_exp_ + C.GAP_SD * sd_exp_)).fillna(False); starts = gap_s.index[up & ~up.shift(1, fill_value=False)]
     e0 = ge.iloc[0]; i0 = rw.index.get_loc(pd.Timestamp(e0["date"])); h0 = C.EXTREME_FWD[0]
     seg = rw["SC100"].iloc[i0 + 1:i0 + 1 + h0]; cum = np.concatenate([[0.0], np.cumsum(seg.values)]); dd_manual = float((np.maximum.accumulate(cum) - cum).max())
     check("H extreme_followups: crossings = first weeks beyond +1 sd; return = t+1..t+h; max drawdown = largest fall from the running peak inside the window", len(ge) == len(starts) and set(pd.to_datetime(ge["date"])) == set(starts) and np.isclose(e0[f"ret_SC100_{h0}"], seg.sum()) and np.isclose(e0[f"maxdd_SC100_{h0}"], dd_manual))
     sm0 = xsm_[(xsm_["series"] == gname) & (xsm_["side"].str.startswith("above")) & (xsm_["horizon_weeks"] == h0) & (xsm_["metric"] == "return SC100")].iloc[0]
     check("H extreme_followups summary: the mean over crossings and the hit share match the per-event table; the any-week baseline is the mean over every week", np.isclose(sm0["mean"], ge[f"ret_SC100_{h0}"].mean()) and np.isclose(sm0["hit"], (ge[f"ret_SC100_{h0}"].dropna() > 0).mean()) and np.isclose(sm0["all_weeks_mean"], PR.forward(rw["SC100"], h0).reindex(gap_s.dropna().index).dropna().mean(), atol=1e-6))
+    # H5d. the B2 band carries no look-ahead: the expanding mean/sd at week t equals the mean/sd of the series truncated AT t (the whole-history band fails this), and no crossing is flagged inside the EP_WARMUP warm-up
+    mN_ = gap_s.expanding(min_periods=C.EP_WARMUP).mean(); sN_ = gap_s.expanding(min_periods=C.EP_WARMUP).std()
+    tprobe = gap_s.dropna().index[int(gap_s.dropna().shape[0] * 0.6)]; trunc = gap_s.loc[:tprobe].dropna()
+    pit_ok = np.isclose(mN_.loc[tprobe], trunc.mean()) and np.isclose(sN_.loc[tprobe], trunc.std())
+    first_band = mN_.notna().idxmax(); warmup_ok = bool((xev_["date"].map(pd.Timestamp) >= first_band).all())
+    check("H B2 band is point-in-time (no look-ahead): the expanding mean/sd at week t equals the mean/sd of the series truncated at t, and no crossing falls inside the EP_WARMUP warm-up", bool(pit_ok) and warmup_ok)
     # H6. the non-overlapping lead/lag: X on t-L+1..t and Y on t+1..t+L share no week, and the level rows are those block values
     L_ = C.LL_BLOCKS[0]
     cL = rw["N100"].rolling(L_).corr(rw["SC100"]); vL = (rw["N100"].rolling(L_).std() + rw["SC100"].rolling(L_).std()) / 2 * np.sqrt(C.ANNUALISE)
@@ -318,6 +333,17 @@ def main() -> int:
     rs_, rsw_ = histcorr.ratio_study(rw, st)
     w0 = rsw_[(rsw_["pair"] == "N100|MC100")].dropna(subset=["next"]).iloc[20]; k_ = rw.index.get_loc(pd.Timestamp(w0["date"]))
     check("H ratio_study: next = (r_a - r_b) summed over t+1..t+F; past over t-B+1..t; quintiles equal within a pair", np.isclose(w0["next"], (rw["N100"] - rw["MC100"]).iloc[k_ + 1:k_ + 1 + C.RATIO_FWD].sum()) and np.isclose(w0["past"], (rw["N100"] - rw["MC100"]).iloc[k_ - C.RATIO_BACK + 1:k_ + 1].sum()) and (rs_[(rs_["pair"] == "N100|MC100") & (rs_["cut"] == "correlation quintile")]["weeks"].max() - rs_[(rs_["pair"] == "N100|MC100") & (rs_["cut"] == "correlation quintile")]["weeks"].min()) <= 1)
+    # H9b. the ratio-quantile addition: z-quintiles ordered per pair; the forward relative return matches a manual recompute
+    rqt_ = histcorr.ratio_quantiles(rw, px_w)
+    structr_ = all(len(g) == C.N_BUCKETS and g.set_index("bucket").loc["Q1", "z_lo"] < g.set_index("bucket").loc["Q5", "z_lo"] for _, g in rqt_.groupby("pair"))
+    lr_ = np.log(px_w["N100"]) - np.log(px_w["SC100"])
+    z_ = ((lr_ - lr_.rolling(C.PAIR_WINDOW, min_periods=C.PAIR_MIN_OBS).mean()) / lr_.rolling(C.PAIR_WINDOW, min_periods=C.PAIR_MIN_OBS).std()).reindex(rw.index)
+    rel_ = rw["N100"] - rw["SC100"]
+    dfr_ = pd.DataFrame({"z": z_}).dropna(); dfr_["bk"] = pd.qcut(dfr_["z"], C.N_BUCKETS, labels=[f"Q{i + 1}" for i in range(C.N_BUCKETS)])
+    q5r_ = [rw.index.get_loc(t) for t in dfr_[dfr_["bk"] == "Q5"].index]
+    manr_ = np.mean([rel_.iloc[i + 1:i + 1 + C.FWD_WINDOW].sum() for i in q5r_ if i + C.FWD_WINDOW < len(rw.index) and rel_.iloc[i + 1:i + 1 + C.FWD_WINDOW].notna().all()])
+    g5r_ = rqt_[(rqt_["pair"] == "N100|SC100") & (rqt_["bucket"] == "Q5")].iloc[0]
+    check("H ratio_quantiles: 5 ratio-deviation quintiles per pair ordered by z; forward 13w relative return = mean of (r_a - r_b) summed over t+1..t+13 in the quintile", structr_ and np.isclose(g5r_["fwd_13w_ret_mean"], manr_, atol=1e-6))
 
     print("F. replacement")
     stf = pd.DataFrame(1, index=wk3, columns=["N100", "MC100", "SC100"], dtype=float)
@@ -365,7 +391,7 @@ def main() -> int:
     check("D reading guide exists with its three parts and no failed chart", gd.exists() and all(s in gd.read_text(encoding="utf-8") for s in ("Part A", "Part B", "Part C", "Reading it for each combination")) and "failed:" not in gd.read_text(encoding="utf-8"))
     gtxt = gd.read_text(encoding="utf-8") if gd.exists() else ""
     check("D reading guide reads every G study pair by pair (around flips, breadth, lead, jumps, quintiles, >0.90, breaks, replacement)", gtxt.count("Reading it for each pair") >= 6 and all(f"fig_{n}" in gtxt for n in ("1_corr_around_flip_pairs", "1_corr_by_breadth", "2_corr_quintiles_pairs", "5_vol_corr_lead", "5_vol_corr_lead_pairs", "5_together", "5_together_pairs", "5_corr_rise_paths", "5_corr_rise_paths_own", "0_gold_when_decoupled", "5_corr_by_regime_more")))
-    check("D reading guide carries the 2026-10-19 additions (gold scatter / gap / after-break, state distribution, VIX vs flip, regime components, non-overlapping lead/lag, ratio) and checks the review's inferences", all(f"fig_{n}" in gtxt for n in ("0_gold_vs_group", "0_gold_gap_reversion", "0_gold_after_break", "5_vol_state_box", "5_vix_flip_leadlag", "5_regime_scatter", "5_regime_timeline", "5_lead_lag_blocks", "2_ratio_by_corr", "2_ratio_by_state", "0_index_vs_gold_pair", "0_extreme_followups")) and "Inference → what the non-overlapping test says" in gtxt and "B10b" in gtxt)
+    check("D reading guide carries the 2026-10-19 additions (gold scatter / gap / after-break, state distribution, VIX vs flip, regime components, non-overlapping lead/lag, ratio) and checks the review's inferences", all(f"fig_{n}" in gtxt for n in ("0_gold_vs_group", "0_gold_gap_reversion", "0_gold_after_break", "5_vol_state_box", "5_vix_flip_leadlag", "5_regime_scatter", "5_regime_timeline", "5_lead_lag_blocks", "2_ratio_by_corr", "2_ratio_by_state", "2_ratio_quantiles", "5_atr_quantiles", "0_index_vs_gold_pair", "0_extreme_followups")) and "Inference → what the non-overlapping test says" in gtxt and "B10b" in gtxt and "B8c" in gtxt)
 
     print(f"\n{len(P)} passed, {len(F)} failed")
     if data.is_synthetic():

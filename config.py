@@ -67,6 +67,7 @@ FWD_WINDOW = 13                  # the following quarter (kept in the tables)
 QUINT_FWD = 4                    # weeks: the forward return the quintile chart shows (t+1 … t+4) — review of 2026-10-19: "4 weeks forward rather than 13"
 N_BUCKETS = 5
 GAP_SD = 1.0                     # the SC100×Gold − N100×Gold gap counts as "extreme" beyond this many of its own sd
+EP_WARMUP = 52                   # weeks of history before the ±GAP_SD band exists. The band is POINT-IN-TIME (an expanding mean ± sd that at every week uses only data up to that week); fix of 2026-11-02, replacing the whole-history mean/sd, which was a look-ahead that flagged 2016-17 crossings against a 2016-2026 baseline. Applies to gap_reversion, extreme_followups and make_episodes.
 GAP_FWD = (4, 13)                # weeks ahead for what followed an extreme gap
 GOLD_AFTER_BREAK = 26            # weeks after a decorrelation episode starts over which the gold pairs' correlation is followed
 EXTREME_FWD = (4, 8, 13)         # weeks ahead for what follows a difference series crossing ±GAP_SD sd (review of 2026-10-23): the series, its components, returns, drawdowns
